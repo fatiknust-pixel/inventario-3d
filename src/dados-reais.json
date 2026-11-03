@@ -206,5 +206,18 @@
   "qtd": "6 pç(s)",
   "fotoEtiqueta": "etiqueta-04-11-02-A.jpg",
   "tipo": "rack"
+ },
+ {
+  "posto": 4,
+  "corredor": 1,
+  "posicao": 5,
+  "altura": "C",
+  "codigo": "A9586660235",
+  "nome": "TRILHO DE FIXACAO DO ESTRIBO E",
+  "lofo": "0M1",
+  "embalagem": "T5 4315",
+  "qtd": "21 pç(s)",
+  "fotoEtiqueta": "etiqueta-04-01-05-C.jpg",
+  "tipo": "prateleira"
  }
 ]
