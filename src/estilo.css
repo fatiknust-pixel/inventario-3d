@@ -1,0 +1,69 @@
+* { box-sizing: border-box }
+html, body, #root { margin: 0; height: 100%; height: 100dvh; overscroll-behavior: none; background: #10151c; color: #e6edf5; font-family: system-ui, sans-serif }
+.app { position: relative; height: 100% }
+.app canvas { position: absolute; inset: 0 }
+header { position: absolute; z-index: 3; top: 0; left: 0; right: 0; display: flex; gap: 8px; align-items: center; padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left)); background: #10151ccc; backdrop-filter: blur(6px); flex-wrap: wrap }
+header input { flex: 1; min-width: 160px; padding: 8px 10px; border-radius: 8px; border: 1px solid #3a4655; background: #1a222c; color: inherit }
+.btn { padding: 8px 12px; border-radius: 8px; border: 1px solid #3a4655; background: #243042; color: inherit; cursor: pointer; font-size: 14px }
+.erro { position: absolute; z-index: 3; top: 56px; left: 12px; right: 12px; background: #7a2230; padding: 8px 12px; border-radius: 8px }
+.lista { position: absolute; z-index: 2; top: 56px; left: 12px; margin: 0; padding: 4px; list-style: none; background: #1a222cf0; border-radius: 10px; max-width: 420px; font-size: 14px }
+.lista li { padding: 8px 10px; cursor: pointer; border-radius: 6px }
+.lista li:hover { background: #2a3646 }
+.painel { position: absolute; z-index: 2; right: 12px; top: 64px; width: 320px; max-width: calc(100% - 24px); background: #1a222cf2; border: 1px solid #33414f; border-radius: 14px; padding: 14px; display: grid; gap: 4px }
+.painel img { width: 100%; border-radius: 10px; background: #2a3340; aspect-ratio: 320/220; object-fit: cover }
+.painel .x { position: absolute; top: 6px; right: 10px; background: #0008; border: 0; color: #fff; font-size: 22px; cursor: pointer; border-radius: 8px }
+.end { font-size: 26px; font-weight: 700; color: #ff8a00; margin-top: 6px; letter-spacing: 1px }
+.sub { font-size: 12px; color: #8fa3b8 }
+.painel h2 { margin: 6px 0 0; font-size: 18px }
+.cod { font-family: ui-monospace, monospace; color: #9ccfff }
+footer { position: absolute; z-index: 1; bottom: 8px; left: 12px; font-size: 12px; color: #8fa3b8 }
+.rotulo { background: #1a222ce0; border: 1px solid #3a4655; border-radius: 8px; padding: 4px 10px; font-weight: 700; white-space: nowrap; color: #fff }
+.rotulo small { display: block; font-weight: 400; color: #8fa3b8; font-size: 11px }
+@media (max-width: 640px) { .painel { top: auto; bottom: 28px; right: 12px; left: 12px; width: auto; grid-template-columns: 110px 1fr; } .painel img { grid-row: span 5 } }
+
+.sair { position: absolute; z-index: 2; left: 12px; top: 56px }
+.lista { top: 100px }
+
+.atalhos { position: absolute; z-index: 2; top: 56px; left: 12px; right: 12px; display: flex; gap: 6px; flex-wrap: wrap }
+.chip { padding: 6px 12px; border-radius: 999px; border: 1px solid #3a4655; background: #1a222ce6; color: inherit; cursor: pointer; font-size: 13px }
+.chip:hover, .chip.on { background: #2f4a6e; border-color: #5a93e0 }
+.sair { display: none }
+.lista { top: 100px }
+.dica { background: #0b0f14ee; border: 1px solid #3a4655; border-radius: 8px; padding: 4px 8px; white-space: nowrap; display: grid; gap: 1px; font-size: 12px; color: #fff }
+.dica b { color: #ff8a00; font-size: 13px }
+.painel .foto { cursor: zoom-in }
+.acoes { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap }
+.btn.nav { padding: 8px 12px; min-width: 40px }
+.btn:disabled { opacity: .35; cursor: default }
+.lightbox { position: absolute; z-index: 5; inset: 0; background: #000d; display: grid; place-items: center; padding: 16px; cursor: zoom-out }
+.lightbox img { max-width: 100%; max-height: 100%; border-radius: 10px }
+@media (max-width: 640px) { .painel { grid-template-columns: 1fr } .painel .foto { grid-row: auto } header input { min-width: 120px } }
+
+.miniatura { background: none; border: 0; color: #7fb4ff; cursor: pointer; text-align: left; padding: 0; font-size: 12px }
+
+.menu { position: relative }
+.menu summary { list-style: none; user-select: none }
+.menu summary::-webkit-details-marker { display: none }
+.menu-itens { position: absolute; right: 0; top: calc(100% + 6px); z-index: 6; display: grid; gap: 6px; padding: 8px; min-width: 190px; background: #1a222cf8; border: 1px solid #3a4655; border-radius: 12px }
+.menu-itens .btn { text-align: left }
+.atalhos { top: calc(56px + env(safe-area-inset-top)) }
+.painel, .lista, .erro, .sair { }
+@media (pointer: coarse) { .btn, .chip { min-height: 44px; display: inline-flex; align-items: center } .btn.nav { min-width: 48px; justify-content: center } }
+@media (max-width: 640px) {
+  header b { display: none }
+  .atalhos { top: calc(66px + env(safe-area-inset-top)) }
+  .lista { top: calc(112px + env(safe-area-inset-top)) }
+  header input { flex: 1 1 0; min-width: 0 }
+  .atalhos { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none }
+  .atalhos::-webkit-scrollbar { display: none }
+  .chip { flex: 0 0 auto }
+  .lista { left: 12px; right: 12px; max-width: none }
+  footer { display: none }
+  .painel { left: 0; right: 0; bottom: 0; top: auto; width: auto; max-width: none; max-height: 52dvh; overflow-y: auto; border-radius: 16px 16px 0 0; padding: 12px 14px max(14px, env(safe-area-inset-bottom)); grid-template-columns: 118px 1fr; column-gap: 12px; align-items: start }
+  .painel > :not(.foto):not(.acoes):not(.x) { grid-column: 2 }
+  .painel .foto { grid-column: 1; grid-row: 1 / span 5; aspect-ratio: 1 / 1 }
+  .painel .acoes { grid-column: 1 / -1 }
+  .painel .end { font-size: 22px; margin-top: 0 }
+  .painel h2 { font-size: 16px }
+  .x { top: 8px; right: 10px }
+}
