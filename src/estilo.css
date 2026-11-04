@@ -16,7 +16,8 @@ header input { flex: 1; min-width: 160px; padding: 8px 10px; border-radius: 8px;
 .sub { font-size: 12px; color: #8fa3b8 }
 .painel h2 { margin: 6px 0 0; font-size: 18px }
 .cod { font-family: ui-monospace, monospace; color: #9ccfff }
-footer { position: absolute; z-index: 1; bottom: 8px; left: 12px; font-size: 12px; color: #8fa3b8 }
+footer { position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 4px 16px; padding: 6px max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); font-size: 12px; color: #8fa3b8; text-shadow: 0 1px 3px #000; pointer-events: none }
+.creditos { margin-left: auto; color: #b8c7d8 }
 .rotulo { background: #1a222ce0; border: 1px solid #3a4655; border-radius: 8px; padding: 4px 10px; font-weight: 700; white-space: nowrap; color: #fff }
 .rotulo small { display: block; font-weight: 400; color: #8fa3b8; font-size: 11px }
 @media (max-width: 640px) { .painel { top: auto; bottom: 28px; right: 12px; left: 12px; width: auto; grid-template-columns: 110px 1fr; } .painel img { grid-row: span 5 } }
@@ -58,7 +59,7 @@ footer { position: absolute; z-index: 1; bottom: 8px; left: 12px; font-size: 12p
   .atalhos::-webkit-scrollbar { display: none }
   .chip { flex: 0 0 auto }
   .lista { left: 12px; right: 12px; max-width: none }
-  footer { display: none }
+  .uso { display: none }
   .painel { left: 0; right: 0; bottom: 0; top: auto; width: auto; max-width: none; max-height: 52dvh; overflow-y: auto; border-radius: 16px 16px 0 0; padding: 12px 14px max(14px, env(safe-area-inset-bottom)); grid-template-columns: 118px 1fr; column-gap: 12px; align-items: start }
   .painel > :not(.foto):not(.acoes):not(.x) { grid-column: 2 }
   .painel .foto { grid-column: 1; grid-row: 1 / span 5; aspect-ratio: 1 / 1 }
