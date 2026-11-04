@@ -155,7 +155,10 @@ export default function App() {
           <img src={verEtiqueta && fotoEtiquetaSrc(sel) ? fotoEtiquetaSrc(sel) : fotoSrc(sel)} alt={sel.nome} />
         </div>
       )}
-      <footer>Setas do teclado: ir ao endereço vizinho · Esc: voltar · clique numa caixa para ver a peça</footer>
+      <footer>
+        <span className="uso">Setas do teclado: ir ao endereço vizinho · Esc: voltar · clique numa caixa para ver a peça</span>
+        <span className="creditos">Criado por Fábio Sarri e Everton de Jesus</span>
+      </footer>
     </div>
   )
 }
