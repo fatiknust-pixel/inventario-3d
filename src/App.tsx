@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Cena, { idPrat, montarLayout, nomePrat } from './Cena'
+import Cena, { geometriaItem, idPrat, montarLayout, nomePrat } from './Cena'
 import { Item, linhaDe, baixarModelo, fotoDaPeca, fotoEtiquetaSrc, dadosExemplo, dadosReais, endereco, fotoSrc, lerExcel, placeholder } from './dados'
 
 export default function App() {
@@ -26,13 +26,13 @@ export default function App() {
 
   const naPrateleira = (i: Item) => i.tipo === 'prateleira'
   function clicarItem(i: Item) {
-    if (naPrateleira(i) && foco !== idPrat(i)) { setFoco(idPrat(i)); setSel(null) }
+    if (naPrateleira(i) && foco !== idPrat(i)) { chegada.current = null; setFoco(idPrat(i)); setSel(null) }
     else { if (!naPrateleira(i)) setFoco(null); setSel(i) }
   }
   function escolher(i: Item) { setFoco(naPrateleira(i) ? idPrat(i) : null); setSel(i) }
   function fundo() { if (sel) setSel(null); else setFoco(null) }
   function irPara(c: number | null) { setSel(null); setFoco(null); setPreset({ c, n: Date.now() }) }
-  function irPrateleira(id: string) { setSel(null); setFoco(id) }
+  function irPrateleira(id: string) { chegada.current = null; setSel(null); setFoco(id) }
 
   // ---- navegação pelas setas ----
   // A fila de um corredor é uma sequência de paradas, da esquerda para a direita vista de frente:
@@ -69,19 +69,50 @@ export default function App() {
     return k < 0 ? null : { ps, k }
   }
   const alvoParada = (d: -1 | 1) => { const a = paradaAtual(); return a ? a.ps[a.k + d] : undefined }
+
+  // Dentro de uma prateleira as setas andam de caixa em caixa; só saem nas pontas (ou em "Sair da prateleira").
+  const chegada = useRef<-1 | 1 | null>(null) // de que lado eu entrei na prateleira (◀ ou ▶)
+  const xDe = (i: Item) => geometriaItem(i, lay).pos.x
+  // caixas de um andar da prateleira, da esquerda para a direita vista de frente
+  function fileiraDaPrat(id: string, altura: string): Item[] {
+    const f = lay.prat.get(id)?.frente ?? 1
+    return itens.filter(i => i.tipo === 'prateleira' && idPrat(i) === id && i.altura === altura).sort((a, b) => (xDe(a) - xDe(b)) * f)
+  }
+  const alturasDa = (id: string) => [...new Set(itens.filter(i => i.tipo === 'prateleira' && idPrat(i) === id).map(i => i.altura))].sort()
+  type Alvo = { item?: Item; parada?: Parada }
+  function alvoSetas(d: -1 | 1): Alvo | undefined {
+    if (sel?.tipo === 'prateleira') {
+      const fila = fileiraDaPrat(idPrat(sel), sel.altura)
+      const vizinha = fila[fila.indexOf(sel) + d]
+      if (vizinha) return { item: vizinha }
+    } else if (!sel && foco != null && (chegada.current == null || chegada.current === d)) {
+      // acabei de entrar: a seta no sentido em que vim escolhe a caixa da ponta por onde entrei
+      const baixo = alturasDa(foco)[0]
+      const fila = baixo ? fileiraDaPrat(foco, baixo) : []
+      const it = d === 1 ? fila[0] : fila[fila.length - 1]
+      if (it) return { item: it }
+    }
+    const p = alvoParada(d) // fora da prateleira, ou na ponta dela: vai para a caixa do lado
+    return p ? { parada: p } : undefined
+  }
   function andar(d: -1 | 1) {
-    const p = alvoParada(d)
-    if (!p) return
-    if (p.prat) { setSel(null); setFoco(p.prat) } // chegou na prateleira: dá o zoom e espera o toque numa caixa
-    else if (p.item) escolher(p.item)
+    const a = alvoSetas(d)
+    if (a?.item) escolher(a.item)
+    else if (a?.parada?.prat) { chegada.current = d; setSel(null); setFoco(a.parada.prat) } // entra na prateleira
+    else if (a?.parada?.item) { chegada.current = null; escolher(a.parada.item) }
   }
-  // ▲ ▼: andar de cima/baixo, só dentro de uma prateleira
-  function vizinho(d: 'cima' | 'baixo'): Item | undefined {
-    if (!sel || sel.tipo !== 'prateleira') return
-    const alt = String.fromCharCode(sel.altura.charCodeAt(0) + (d === 'cima' ? 1 : -1))
-    return itens.find(i => i.tipo === 'prateleira' && idPrat(i) === idPrat(sel) && i.posicao === sel.posicao && i.altura === alt)
+  // ▲ ▼: andar de cima/baixo, escolhendo a caixa mais próxima na horizontal
+  function alvoVertical(dir: 'cima' | 'baixo'): Item | undefined {
+    if (sel?.tipo !== 'prateleira') return
+    const id = idPrat(sel)
+    const alts = alturasDa(id)
+    const alt = alts[alts.indexOf(sel.altura) + (dir === 'cima' ? 1 : -1)]
+    const fila = alt ? fileiraDaPrat(id, alt) : []
+    if (!fila.length) return
+    const x = xDe(sel)
+    return fila.reduce((m, c) => (Math.abs(xDe(c) - x) < Math.abs(xDe(m) - x) ? c : m))
   }
-  function subir(d: 'cima' | 'baixo') { const v = vizinho(d); if (v) escolher(v) }
+  function subir(dir: 'cima' | 'baixo') { const v = alvoVertical(dir); if (v) escolher(v) }
 
   useEffect(() => {
     function tecla(e: KeyboardEvent) {
@@ -160,8 +191,8 @@ export default function App() {
           <div className="sub">{caixasFoco.length} caixas cadastradas · andares A (baixo) a {String.fromCharCode(64 + (pf?.niveis ?? 3))} (alto)</div>
           <h2>Toque na caixa que você quer ver</h2>
           <div className="acoes">
-            <button className="btn nav" title="Parada à esquerda" disabled={!alvoParada(-1)} onClick={() => andar(-1)}>◀</button>
-            <button className="btn nav" title="Parada à direita" disabled={!alvoParada(1)} onClick={() => andar(1)}>▶</button>
+            <button className="btn nav" title="Entrar pela esquerda / sair para a esquerda" disabled={!alvoSetas(-1)} onClick={() => andar(-1)}>◀</button>
+            <button className="btn nav" title="Entrar pela direita / sair para a direita" disabled={!alvoSetas(1)} onClick={() => andar(1)}>▶</button>
             <button className="btn" onClick={() => setFoco(null)}>← Sair da prateleira</button>
           </div>
         </aside>
@@ -182,11 +213,12 @@ export default function App() {
           {sel.qtd && <div>Quant./Embal.: {sel.qtd}</div>}
           {sel.obs && <div className="obs"><b>Observação:</b> {sel.obs}</div>}
           <div className="acoes">
-            <button className="btn nav" title="Parada à esquerda" disabled={!alvoParada(-1)} onClick={() => andar(-1)}>◀</button>
-            <button className="btn nav" title="Andar de cima (na prateleira)" disabled={!vizinho('cima')} onClick={() => subir('cima')}>▲</button>
-            <button className="btn nav" title="Andar de baixo (na prateleira)" disabled={!vizinho('baixo')} onClick={() => subir('baixo')}>▼</button>
-            <button className="btn nav" title="Parada à direita" disabled={!alvoParada(1)} onClick={() => andar(1)}>▶</button>
+            <button className="btn nav" title="Caixa à esquerda" disabled={!alvoSetas(-1)} onClick={() => andar(-1)}>◀</button>
+            <button className="btn nav" title="Andar de cima (na prateleira)" disabled={!alvoVertical('cima')} onClick={() => subir('cima')}>▲</button>
+            <button className="btn nav" title="Andar de baixo (na prateleira)" disabled={!alvoVertical('baixo')} onClick={() => subir('baixo')}>▼</button>
+            <button className="btn nav" title="Caixa à direita" disabled={!alvoSetas(1)} onClick={() => andar(1)}>▶</button>
             <button className="btn" onClick={copiar}>{copiado ? 'Copiado ✓' : 'Copiar endereço'}</button>
+            {sel.tipo === 'prateleira' && <button className="btn" onClick={() => { setFoco(null); setSel(null) }}>← Sair da prateleira</button>}
           </div>
         </aside>
       )}
