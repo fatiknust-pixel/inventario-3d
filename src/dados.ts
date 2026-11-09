@@ -6,7 +6,7 @@ export type Item = {
   posto: number
   corredor: number
   posicao: number
-  altura: string // A (baixa), B, C (alta)
+  altura: string // A (baixa), B, C, D…
   codigo: string
   nome: string
   lofo?: string
@@ -15,10 +15,13 @@ export type Item = {
   foto?: string // nome do arquivo em public/fotos, ou URL
   fotoEtiqueta?: string
   tipo?: 'rack' | 'prateleira'
+  cor?: string // código de cor que vem junto do código da peça (ex.: 7277)
+  obs?: string // observação de campo
+  semEndereco?: boolean // caixa sem endereço (ex.: no chão)
 }
 
 const p2 = (n: number) => String(n).padStart(2, '0')
-export const endereco = (i: Item) => `${p2(i.posto)} ${p2(i.corredor)} ${p2(i.posicao)} ${i.altura}`
+export const endereco = (i: Item) => (i.semEndereco ? 'SEM ENDEREÇO' : `${p2(i.posto)} ${p2(i.corredor)} ${p2(i.posicao)} ${i.altura}`)
 
 export function placeholder(texto: string) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="220"><rect width="100%" height="100%" fill="#2a3340"/><text x="50%" y="46%" fill="#8fa3b8" font-family="sans-serif" font-size="16" text-anchor="middle">sem foto</text><text x="50%" y="60%" fill="#cfe0f0" font-family="sans-serif" font-size="15" text-anchor="middle">${texto}</text></svg>`
@@ -85,6 +88,7 @@ const COLUNAS: Record<string, keyof Item | 'coordenador'> = {
   item: 'codigo', codigo: 'codigo', peca: 'codigo',
   descricao: 'nome', nome: 'nome', nomedapeca: 'nome',
   lofo: 'lofo',
+  cor: 'cor', obs: 'obs', observacao: 'obs',
   embalagem: 'embalagem', emb: 'embalagem',
   qtd: 'qtd', quantidade: 'qtd', qtdembal: 'qtd',
   foto: 'foto', fotopeca: 'foto', fotodapeca: 'foto',
@@ -112,7 +116,7 @@ export async function lerExcel(file: File): Promise<Item[]> {
     if (!r.altura || [posto, corredor, posicao].some(isNaN)) continue
     itens.push({
       posto, corredor, posicao, altura: r.altura.toUpperCase(),
-      codigo: r.codigo ?? '', nome: r.nome ?? '', lofo: r.lofo, embalagem: r.embalagem, qtd: r.qtd,
+      codigo: r.codigo ?? '', nome: r.nome ?? '', lofo: r.lofo, cor: r.cor || undefined, obs: r.obs || undefined, embalagem: r.embalagem, qtd: r.qtd,
       foto: r.foto || undefined, fotoEtiqueta: r.fotoEtiqueta || undefined,
       tipo: r.tipo?.toLowerCase().startsWith('prat') ? 'prateleira' : 'rack',
     })

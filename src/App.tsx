@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Cena, { montarLayout } from './Cena'
+import Cena, { frenteItem, idPrat, montarLayout, nomePrat } from './Cena'
 import { Item, baixarModelo, fotoDaPeca, fotoEtiquetaSrc, dadosExemplo, dadosReais, endereco, fotoSrc, lerExcel, placeholder } from './dados'
 
 type Dir = 'mais' | 'menos' | 'cima' | 'baixo'
@@ -7,7 +7,7 @@ type Dir = 'mais' | 'menos' | 'cima' | 'baixo'
 export default function App() {
   const [itens, setItens] = useState<Item[]>(() => dadosReais())
   const [sel, setSel] = useState<Item | null>(null)
-  const [foco, setFoco] = useState<number | null>(null) // prateleira em zoom
+  const [foco, setFoco] = useState<string | null>(null) // prateleira em zoom (id "posto-corredor")
   const [preset, setPreset] = useState<{ c: number | null; n: number } | null>(null)
   const [busca, setBusca] = useState('')
   const [erro, setErro] = useState('')
@@ -19,36 +19,37 @@ export default function App() {
   useEffect(() => setVerEtiqueta(false), [sel])
 
   const lay = useMemo(() => montarLayout(itens), [itens])
-  const frenteDe = (c: number) => lay.map.get(c)?.frente ?? lay.prat.get(c)?.frente ?? 1
 
   const achados = useMemo(() => {
     const q = busca.trim().toLowerCase()
     if (!q) return null
-    return new Set(itens.filter(i => `${i.codigo} ${i.nome} ${endereco(i)}`.toLowerCase().includes(q)))
+    return new Set(itens.filter(i => `${i.codigo} ${i.cor ?? ''} ${i.nome} ${endereco(i)}`.toLowerCase().includes(q)))
   }, [busca, itens])
 
   const naPrateleira = (i: Item) => i.tipo === 'prateleira'
   function clicarItem(i: Item) {
-    if (naPrateleira(i) && foco !== i.corredor) { setFoco(i.corredor); setSel(null) }
+    if (naPrateleira(i) && foco !== idPrat(i)) { setFoco(idPrat(i)); setSel(null) }
     else { if (!naPrateleira(i)) setFoco(null); setSel(i) }
   }
-  function escolher(i: Item) { setFoco(naPrateleira(i) ? i.corredor : null); setSel(i) }
+  function escolher(i: Item) { setFoco(naPrateleira(i) ? idPrat(i) : null); setSel(i) }
   function fundo() { if (sel) setSel(null); else setFoco(null) }
   function irPara(c: number | null) { setSel(null); setFoco(null); setPreset({ c, n: Date.now() }) }
-  function irPrateleira(c: number) { setSel(null); setFoco(c) }
+  function irPrateleira(id: string) { setSel(null); setFoco(id) }
 
-  // vizinho do endereço selecionado (setas do teclado ou botões do painel)
+  // vizinho do endereço selecionado (setas do teclado ou botões do painel), só dentro da mesma prateleira ou fileira de racks
+  const grupoDe = (i: Item) => (i.tipo === 'prateleira' ? `P${idPrat(i)}` : `R${i.corredor}`)
   function vizinho(d: Dir): Item | undefined {
-    if (!sel) return
+    if (!sel || sel.semEndereco) return
+    const g = grupoDe(sel)
     if (d === 'cima' || d === 'baixo') {
       const alt = String.fromCharCode(sel.altura.charCodeAt(0) + (d === 'cima' ? 1 : -1))
-      return itens.find(i => i.corredor === sel.corredor && i.posto === sel.posto && i.posicao === sel.posicao && i.altura === alt)
+      return itens.find(i => !i.semEndereco && grupoDe(i) === g && i.posto === sel.posto && i.posicao === sel.posicao && i.altura === alt)
     }
-    const linha = itens.filter(i => i.corredor === sel.corredor && i.altura === sel.altura).sort((a, b) => a.posto - b.posto || a.posicao - b.posicao)
+    const linha = itens.filter(i => !i.semEndereco && grupoDe(i) === g && i.altura === sel.altura).sort((a, b) => a.posto - b.posto || a.posicao - b.posicao)
     return linha[linha.indexOf(sel) + (d === 'mais' ? 1 : -1)]
   }
   // esquerda/direita na tela dependem de que lado do corredor a câmera está
-  const lado = (esq: boolean): Dir => ((esq ? 1 : -1) * (sel ? frenteDe(sel.corredor) : 1) === 1 ? 'menos' : 'mais')
+  const lado = (esq: boolean): Dir => ((esq ? 1 : -1) * (sel ? frenteItem(sel, lay) : 1) === 1 ? 'menos' : 'mais')
   function mover(d: Dir) { const v = vizinho(d); if (v) escolher(v) }
 
   useEffect(() => {
@@ -78,7 +79,8 @@ export default function App() {
     try { await navigator.clipboard.writeText(endereco(sel)); setCopiado(true); setTimeout(() => setCopiado(false), 1500) } catch { /* sem permissão */ }
   }
 
-  const caixasFoco = foco != null ? itens.filter(i => i.corredor === foco) : []
+  const pf = foco != null ? lay.prat.get(foco) : undefined
+  const caixasFoco = foco != null ? itens.filter(i => i.tipo === 'prateleira' && idPrat(i) === foco) : []
   const pad = (n: number) => String(n).padStart(2, '0')
   const botoesNav: [string, Dir, string][] = [['◀', lado(true), 'Endereço à esquerda'], ['▲', 'cima', 'Andar de cima'], ['▼', 'baixo', 'Andar de baixo'], ['▶', lado(false), 'Endereço à direita']]
 
@@ -108,11 +110,11 @@ export default function App() {
       </header>
       <nav className="atalhos">
         <button className="chip" onClick={() => irPara(null)}>Visão geral</button>
-        {[...lay.map.keys()].map(c => <button key={c} className="chip" onClick={() => irPara(c)}>Corredor {pad(c)}</button>)}
-        {[...lay.prat.keys()].map(c => <button key={c} className={`chip${foco === c ? ' on' : ''}`} onClick={() => irPrateleira(c)}>Prateleira {pad(c)}</button>)}
+        {[...lay.linhas.keys()].sort((a, b) => a - b).map(c => <button key={c} className="chip" onClick={() => irPara(c)}>Corredor {pad(c)}</button>)}
+        {[...lay.prat.values()].map(p => <button key={p.id} className={`chip${foco === p.id ? ' on' : ''}`} onClick={() => irPrateleira(p.id)}>{nomePrat(p)}</button>)}
       </nav>
       {erro && <div className="erro">{erro}</div>}
-      <Cena itens={itens} selecionado={sel} foco={foco} achados={achados} preset={preset} onSel={clicarItem} onFoco={c => { setFoco(c); setSel(null) }} onFundo={fundo} />
+      <Cena itens={itens} selecionado={sel} foco={foco} achados={achados} preset={preset} onSel={clicarItem} onFoco={id => { setFoco(id); setSel(null) }} onFundo={fundo} />
       {achados && !sel && (
         <ul className="lista">
           {[...achados].slice(0, 8).map((i, k) => (
@@ -124,8 +126,8 @@ export default function App() {
       )}
       {foco != null && !sel && (
         <aside className="painel">
-          <div className="end">Prateleira {pad(foco)}</div>
-          <div className="sub">{caixasFoco.length} caixas cadastradas · andares A (baixo) a C (alto)</div>
+          <div className="end">{pf ? nomePrat(pf) : 'Prateleira'}</div>
+          <div className="sub">{caixasFoco.length} caixas cadastradas · andares A (baixo) a {String.fromCharCode(64 + (pf?.niveis ?? 3))} (alto)</div>
           <h2>Clique na caixa que você quer ver</h2>
           <button className="btn" onClick={() => setFoco(null)}>← Sair da prateleira</button>
         </aside>
@@ -138,12 +140,13 @@ export default function App() {
             <button className="miniatura" onClick={() => setVerEtiqueta(v => !v)}>{verEtiqueta ? '← Ver a peça' : 'Ver foto da etiqueta'}</button>
           )}
           <div className="end">{endereco(sel)}</div>
-          <div className="sub">posto {sel.posto} · corredor {sel.corredor} · posição {sel.posicao} · altura {sel.altura}</div>
+          <div className="sub">{sel.semEndereco ? `caixa no chão, sem endereço · perto do corredor ${pad(sel.corredor)}` : `posto ${sel.posto} · corredor ${sel.corredor} · posição ${sel.posicao} · altura ${sel.altura}`}</div>
           <h2>{sel.nome || '(vazio)'}</h2>
-          <div className="cod">{sel.codigo}</div>
+          <div className="cod">{sel.codigo}{sel.cor && <span className="cor"> · cor {sel.cor}</span>}</div>
           {sel.lofo && <div>Lofo: {sel.lofo}</div>}
           {sel.embalagem && <div>Emb.: {sel.embalagem}</div>}
           {sel.qtd && <div>Quant./Embal.: {sel.qtd}</div>}
+          {sel.obs && <div className="obs"><b>Observação:</b> {sel.obs}</div>}
           <div className="acoes">
             {botoesNav.map(([t, d, dica]) => <button key={t} className="btn nav" title={dica} disabled={!vizinho(d)} onClick={() => mover(d)}>{t}</button>)}
             <button className="btn" onClick={copiar}>{copiado ? 'Copiado ✓' : 'Copiar endereço'}</button>
@@ -156,7 +159,7 @@ export default function App() {
         </div>
       )}
       <footer>
-        <span className="uso">Setas do teclado: ir ao endereço vizinho · Esc: voltar · clique numa caixa para ver a peça</span>
+        <span className="uso">Setas do teclado: ir ao endereço vizinho · Esc: voltar · clique numa caixa para ver a peça · vermelho: peça com observação</span>
         <span className="creditos">Criado por Fábio Sarri e Eviton Capistrano</span>
       </footer>
     </div>

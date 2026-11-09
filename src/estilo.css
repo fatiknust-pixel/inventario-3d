@@ -68,3 +68,9 @@ footer { position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; display: 
   .painel h2 { font-size: 16px }
   .x { top: 8px; right: 10px }
 }
+
+.painel img.foto { object-fit: contain; aspect-ratio: auto; height: 220px; background: #0b0f14 }
+.painel .cor { color: #8fa3b8; font-size: 13px }
+.painel .obs { margin-top: 4px; padding: 6px 8px; border-radius: 8px; background: #3a2420; border: 1px solid #7a3b30; color: #ffd9cf; font-size: 13px }
+.rotulo.vazio { opacity: .75; border-style: dashed }
+@media (max-width: 640px) { .painel img.foto { height: 118px; aspect-ratio: auto } }
