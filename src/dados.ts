@@ -18,7 +18,12 @@ export type Item = {
   cor?: string // código de cor que vem junto do código da peça (ex.: 7277)
   obs?: string // observação de campo
   semEndereco?: boolean // caixa sem endereço (ex.: no chão)
+  local?: number // corredor onde a caixa está de fato, quando o endereço escrito diz outro
+  ordem?: number // posição na fila física do corredor, quando a ordem dos endereços não vale
 }
+
+// corredor onde a caixa está no chão de fábrica
+export const linhaDe = (i: Item) => i.local ?? i.corredor
 
 const p2 = (n: number) => String(n).padStart(2, '0')
 export const endereco = (i: Item) => (i.semEndereco ? 'SEM ENDEREÇO' : `${p2(i.posto)} ${p2(i.corredor)} ${p2(i.posicao)} ${i.altura}`)
