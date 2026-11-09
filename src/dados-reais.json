@@ -243,7 +243,8 @@
   "nome": "SOLEIRA DIR/ESQ",
   "obs": "Sem endereço na prateleira. Dois modelos diferentes de peça na mesma caixa. Colocaram a caixa em um inventário; peça nunca usada.",
   "tipo": "prateleira",
-  "ordem": 4
+  "ordem": 4,
+  "foto": "soleira-01-01-02-A.jpg"
  },
  {
   "posto": 1,
