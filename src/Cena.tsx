@@ -31,7 +31,7 @@ const pad = (n: number) => String(n).padStart(2, '0')
 export const idPrat = (i: Item) => `${i.posto}-${i.corredor}`
 export const nomePrat = (p: { posto: number; corredor: number }) => `Prateleira ${pad(p.posto)} ${pad(p.corredor)}`
 
-type Bloco = { tipo: 'rack'; posto: number; posicao: number; x: number } | { tipo: 'prat'; id: string; x: number; w: number }
+export type Bloco = { tipo: 'rack'; posto: number; posicao: number; x: number } | { tipo: 'prat'; id: string; x: number; w: number } | { tipo: 'livre'; item: Item; x: number }
 export type Linha = { corredor: number; z: number; frente: 1 | -1; espelhado: boolean; blocos: Bloco[]; vazio: boolean; xFim: number; largura: number; livres: Item[] }
 export type Prat = { id: string; posto: number; corredor: number; espelhado: boolean; x: number; z: number; frente: 1 | -1; w: number; h: number; niveis: number; cols: number; porAndar: Record<string, number> }
 type Cand = { chave: [number, number]; tipo: 'livre'; item: Item } | { chave: [number, number]; tipo: 'rack'; posto: number; posicao: number } | { chave: [number, number]; tipo: 'prat'; id: string }
@@ -99,6 +99,7 @@ export function montarLayout(itens: Item[]) {
       for (const b of cands) {
         if (b.tipo === 'livre') {
           livreX.set(b.item, x + 0.65)
+          blocos.push({ tipo: 'livre', item: b.item, x: x + 0.65 })
           x += 1.3 + GAP
         } else if (b.tipo === 'rack') {
           blocos.push({ tipo: 'rack', posto: b.posto, posicao: b.posicao, x: x + BAY_W / 2 })
@@ -216,8 +217,8 @@ function Prateleira({ p, focada, onFoco }: { p: Prat; focada: boolean; onFoco: (
   return (
     <group
       position={[p.x, 0, p.z]}
-      onClick={e => { e.stopPropagation(); onFoco(p.id) }}
-      onPointerOver={e => { e.stopPropagation(); document.body.style.cursor = 'pointer' }}
+      onClick={e => { e.stopPropagation(); if (!focada) onFoco(p.id) }}
+      onPointerOver={e => { e.stopPropagation(); document.body.style.cursor = focada ? 'auto' : 'pointer' }}
       onPointerOut={() => { document.body.style.cursor = 'auto' }}
     >
       {([[-1, -1], [1, -1], [-1, 1], [1, 1]] as const).map(([a, b], k) => (
@@ -311,7 +312,8 @@ export default function Cena({ itens, selecionado, foco, achados, onSel, onFoco,
     const novoPreset = preset && preset.n !== presetVisto.current ? preset : null
     if (preset) presetVisto.current = preset.n
     if (p) {
-      v.alvo.copy(R(new THREE.Vector3(p.x, p.h / 2 + 0.25, p.z)))
+      // em tela em pé o painel cobre a parte de baixo: abaixa o alvo para a prateleira aparecer mais acima
+      v.alvo.copy(R(new THREE.Vector3(p.x, p.h / 2 + 0.25 - (paisagem ? 0 : 0.75), p.z)))
       const d = Math.max(3.2, p.h * 1.7) * afasta(0.7)
       v.off = R(new THREE.Vector3(0, 0.7 * afasta(0.7), p.frente * d))
     } else if (selecionado) {
@@ -339,10 +341,10 @@ export default function Cena({ itens, selecionado, foco, achados, onSel, onFoco,
   for (const [c, l] of lay.linhas) {
     for (const b of l.blocos) {
       if (b.tipo === 'rack') frames.push(<Rack key={`${c}-${b.posto}-${b.posicao}`} x={b.x} z={l.z} frente={l.frente} ghost={l.vazio} />)
-      else {
+      else if (b.tipo === 'prat') {
         const p = lay.prat.get(b.id)!
         frames.push(<Prateleira key={`p${b.id}`} p={p} focada={foco === b.id} onFoco={onFoco} />)
-        if (foco == null || foco === b.id)
+        if (foco == null || (foco === b.id && paisagem))
           frames.push(
             <Html key={`pl${b.id}`} position={[p.x, p.h + 0.25, p.z]} center>
               <div className="rotulo">{nomePrat(p)}</div>
