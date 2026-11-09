@@ -288,7 +288,7 @@
   "fotoEtiqueta": "etiqueta-01-01-07-A.jpg",
   "obs": "Peça correta na posição; caixa posicionada um pouco ao lado.",
   "tipo": "rack",
-  "ordem": 5
+  "ordem": 6
  },
  {
   "posto": 1,
@@ -303,7 +303,8 @@
   "fotoEtiqueta": "etiqueta-sem-endereco-A9626660501.jpg",
   "obs": "Sem endereço na caixa e no chão. Peça correta na caixa.",
   "semEndereco": true,
-  "tipo": "rack"
+  "tipo": "rack",
+  "ordem": 5
  },
  {
   "posto": 1,

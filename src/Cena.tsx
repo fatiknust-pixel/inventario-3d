@@ -34,7 +34,7 @@ export const nomePrat = (p: { posto: number; corredor: number }) => `Prateleira 
 type Bloco = { tipo: 'rack'; posto: number; posicao: number; x: number } | { tipo: 'prat'; id: string; x: number; w: number }
 export type Linha = { corredor: number; z: number; frente: 1 | -1; espelhado: boolean; blocos: Bloco[]; vazio: boolean; xFim: number; largura: number; livres: Item[] }
 export type Prat = { id: string; posto: number; corredor: number; espelhado: boolean; x: number; z: number; frente: 1 | -1; w: number; h: number; niveis: number; cols: number; porAndar: Record<string, number> }
-type Cand = { chave: [number, number]; tipo: 'rack'; posto: number; posicao: number } | { chave: [number, number]; tipo: 'prat'; id: string }
+type Cand = { chave: [number, number]; tipo: 'livre'; item: Item } | { chave: [number, number]; tipo: 'rack'; posto: number; posicao: number } | { chave: [number, number]; tipo: 'prat'; id: string }
 
 export function montarLayout(itens: Item[]) {
   const comEnd = itens.filter(i => !i.semEndereco)
@@ -62,6 +62,7 @@ export function montarLayout(itens: Item[]) {
   const linhas = new Map<number, Linha>()
   const prat = new Map<string, Prat>()
   const rackX = new Map<string, number>()
+  const livreX = new Map<Item, number>() // caixas no chão, sem endereço
   const passagens: number[] = []
 
   pares.forEach((g, p) => {
@@ -87,6 +88,8 @@ export function montarLayout(itens: Item[]) {
           if (enc.host === c) cands.push({ chave: [enc.posto, enc.posicao + 0.5], tipo: 'prat', id })
         } else if (linhaDe(its[0]) === c) cands.push({ chave: ord != null ? [ord, ord] : [its[0].posto, Math.min(...its.map(i => i.posicao))], tipo: 'prat', id })
       }
+      const livres = itens.filter(i => i.semEndereco && linhaDe(i) === c)
+      for (const it of livres) cands.push({ chave: [it.ordem ?? 99, it.ordem ?? 99], tipo: 'livre', item: it })
       cands.sort((a, b) => a.chave[0] - b.chave[0] || a.chave[1] - b.chave[1])
       const vazio = cands.length === 0
       if (vazio) for (let pos = 1; pos <= VAZIO_BAYS; pos++) cands.push({ chave: [0, pos], tipo: 'rack', posto: 0, posicao: pos })
@@ -94,7 +97,10 @@ export function montarLayout(itens: Item[]) {
       let x = 0
       const blocos: Bloco[] = []
       for (const b of cands) {
-        if (b.tipo === 'rack') {
+        if (b.tipo === 'livre') {
+          livreX.set(b.item, x + 0.65)
+          x += 1.3 + GAP
+        } else if (b.tipo === 'rack') {
           blocos.push({ tipo: 'rack', posto: b.posto, posicao: b.posicao, x: x + BAY_W / 2 })
           rackX.set(`${c}|${b.posto}|${b.posicao}`, x + BAY_W / 2)
           x += BAY_W + GAP
@@ -106,22 +112,22 @@ export function montarLayout(itens: Item[]) {
           x += d.w + GAP
         }
       }
-      const livres = itens.filter(i => i.semEndereco && linhaDe(i) === c)
       const xFim = x - GAP
-      const largura = xFim + (livres.length ? 1.1 + (livres.length - 1) * 1.3 + 0.7 : 0)
+      const largura = xFim
       if (espelhado) {
         // gira a fila de ponta a ponta: o que era o primeiro da esquerda passa a ficar à direita de quem olha de frente
         for (const bl of blocos) bl.x = largura - bl.x
         for (const k of [...rackX.keys()]) if (k.startsWith(`${c}|`)) rackX.set(k, largura - rackX.get(k)!)
+        for (const it of livres) livreX.set(it, largura - livreX.get(it)!)
         for (const pr of prat.values()) if (pr.z === z) pr.x = largura - pr.x
       }
-      linhas.set(c, { corredor: c, z, frente, espelhado, blocos, vazio, xFim, largura, livres })
+      linhas.set(c, { corredor: c, z, frente, espelhado, blocos, vazio, xFim, largura, livres: [] })
     })
   })
 
   let xMax = 1
   for (const l of linhas.values()) xMax = Math.max(xMax, l.largura)
-  return { linhas, prat, rackX, passagens, xMax, pares: pares.length }
+  return { linhas, prat, rackX, livreX, passagens, xMax, pares: pares.length }
 }
 export type LayoutInfo = ReturnType<typeof montarLayout>
 
@@ -129,9 +135,7 @@ export type LayoutInfo = ReturnType<typeof montarLayout>
 export function geometriaItem(i: Item, lay: LayoutInfo) {
   if (i.semEndereco) {
     const l = lay.linhas.get(linhaDe(i))
-    const k = l ? l.livres.indexOf(i) : 0
-    const xr = (l?.xFim ?? 0) + 1.1 + k * 1.3
-    return { pos: new THREE.Vector3(l?.espelhado ? l.largura - xr : xr, 0.28, l?.z ?? 0), size: [1.0, 0.56, 0.8] as [number, number, number] }
+    return { pos: new THREE.Vector3(lay.livreX.get(i) ?? 0, 0.28, l?.z ?? 0), size: [1.0, 0.56, 0.8] as [number, number, number] }
   }
   const p = i.tipo === 'prateleira' ? lay.prat.get(idPrat(i)) : undefined
   if (p) {
