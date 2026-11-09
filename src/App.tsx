@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Cena, { frenteItem, idPrat, montarLayout, nomePrat } from './Cena'
-import { Item, baixarModelo, fotoDaPeca, fotoEtiquetaSrc, dadosExemplo, dadosReais, endereco, fotoSrc, lerExcel, placeholder } from './dados'
+import { Item, linhaDe, baixarModelo, fotoDaPeca, fotoEtiquetaSrc, dadosExemplo, dadosReais, endereco, fotoSrc, lerExcel, placeholder } from './dados'
 
 type Dir = 'mais' | 'menos' | 'cima' | 'baixo'
 
@@ -37,7 +37,7 @@ export default function App() {
   function irPrateleira(id: string) { setSel(null); setFoco(id) }
 
   // vizinho do endereço selecionado (setas do teclado ou botões do painel), só dentro da mesma prateleira ou fileira de racks
-  const grupoDe = (i: Item) => (i.tipo === 'prateleira' ? `P${idPrat(i)}` : `R${i.corredor}`)
+  const grupoDe = (i: Item) => (i.tipo === 'prateleira' ? `P${idPrat(i)}` : `R${linhaDe(i)}`)
   function vizinho(d: Dir): Item | undefined {
     if (!sel || sel.semEndereco) return
     const g = grupoDe(sel)
@@ -140,7 +140,7 @@ export default function App() {
             <button className="miniatura" onClick={() => setVerEtiqueta(v => !v)}>{verEtiqueta ? '← Ver a peça' : 'Ver foto da etiqueta'}</button>
           )}
           <div className="end">{endereco(sel)}</div>
-          <div className="sub">{sel.semEndereco ? `caixa no chão, sem endereço · perto do corredor ${pad(sel.corredor)}` : `posto ${sel.posto} · corredor ${sel.corredor} · posição ${sel.posicao} · altura ${sel.altura}`}</div>
+          <div className="sub">{sel.semEndereco ? `caixa no chão, sem endereço · perto do corredor ${pad(linhaDe(sel))}` : `posto ${sel.posto} · corredor ${sel.corredor} · posição ${sel.posicao} · altura ${sel.altura}`}{sel.local && sel.local !== sel.corredor && ` · fica fisicamente no corredor ${pad(sel.local)}`}</div>
           <h2>{sel.nome || '(vazio)'}</h2>
           <div className="cod">{sel.codigo}{sel.cor && <span className="cor"> · cor {sel.cor}</span>}</div>
           {sel.lofo && <div>Lofo: {sel.lofo}</div>}

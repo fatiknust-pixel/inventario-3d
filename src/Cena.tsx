@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Html } from '@react-three/drei'
 import * as THREE from 'three'
-import { endereco, type Item } from './dados'
+import { endereco, linhaDe, type Item } from './dados'
 
 // ---- medidas (metros) — ajuste aqui ----
 const BAY_W = 1.2 // largura de cada rack
@@ -49,7 +49,7 @@ export function montarLayout(itens: Item[]) {
 
   // corredores que não estão no mapa fixo entram depois, de dois em dois
   const conhecidos = new Set(PARES.flat())
-  const extras = [...new Set(itens.map(i => i.corredor))].filter(c => !conhecidos.has(c)).sort((a, b) => a - b)
+  const extras = [...new Set(itens.map(linhaDe))].filter(c => !conhecidos.has(c)).sort((a, b) => a - b)
   const pares = [...PARES]
   for (let k = 0; k < extras.length; k += 2) pares.push(extras.slice(k, k + 2))
 
@@ -65,16 +65,20 @@ export function montarLayout(itens: Item[]) {
       const frente: 1 | -1 = g.length === 1 || lado === 0 ? 1 : -1
       const cands: Cand[] = []
 
-      const racks = comEnd.filter(i => i.corredor === c && i.tipo !== 'prateleira')
-      for (const po of new Set(racks.map(i => i.posto))) {
-        const ps = racks.filter(i => i.posto === po).map(i => i.posicao)
-        for (let pos = Math.min(...ps); pos <= Math.max(...ps); pos++) cands.push({ chave: [po, pos], tipo: 'rack', posto: po, posicao: pos })
+      const racks = comEnd.filter(i => linhaDe(i) === c && i.tipo !== 'prateleira')
+      const vistos = new Set<string>()
+      for (const r of racks) {
+        const k = `${r.posto}|${r.posicao}`
+        if (vistos.has(k)) continue
+        vistos.add(k)
+        cands.push({ chave: [r.ordem ?? r.posto, r.ordem ?? r.posicao], tipo: 'rack', posto: r.posto, posicao: r.posicao })
       }
       for (const [id, its] of grupos) {
         const enc = ENCAIXE[id]
+        const ord = its.find(i => i.ordem != null)?.ordem
         if (enc) {
           if (enc.host === c) cands.push({ chave: [enc.posto, enc.posicao + 0.5], tipo: 'prat', id })
-        } else if (its[0].corredor === c) cands.push({ chave: [its[0].posto, Math.min(...its.map(i => i.posicao))], tipo: 'prat', id })
+        } else if (linhaDe(its[0]) === c) cands.push({ chave: ord != null ? [ord, ord] : [its[0].posto, Math.min(...its.map(i => i.posicao))], tipo: 'prat', id })
       }
       cands.sort((a, b) => a.chave[0] - b.chave[0] || a.chave[1] - b.chave[1])
       const vazio = cands.length === 0
@@ -95,7 +99,7 @@ export function montarLayout(itens: Item[]) {
           x += d.w + GAP
         }
       }
-      linhas.set(c, { corredor: c, z, frente, blocos, vazio, xFim: x - GAP, livres: itens.filter(i => i.semEndereco && i.corredor === c) })
+      linhas.set(c, { corredor: c, z, frente, blocos, vazio, xFim: x - GAP, livres: itens.filter(i => i.semEndereco && linhaDe(i) === c) })
     })
   })
 
@@ -108,7 +112,7 @@ export type LayoutInfo = ReturnType<typeof montarLayout>
 // posição 3D e tamanho da caixa de cada item
 export function geometriaItem(i: Item, lay: LayoutInfo) {
   if (i.semEndereco) {
-    const l = lay.linhas.get(i.corredor)
+    const l = lay.linhas.get(linhaDe(i))
     const k = l ? l.livres.indexOf(i) : 0
     return { pos: new THREE.Vector3((l?.xFim ?? 0) + 1.1 + k * 1.3, 0.28, l?.z ?? 0), size: [1.0, 0.56, 0.8] as [number, number, number] }
   }
@@ -121,15 +125,15 @@ export function geometriaItem(i: Item, lay: LayoutInfo) {
       size: [BOX_W * 0.92, bh, SHELF_D * 0.82] as [number, number, number],
     }
   }
-  const l = lay.linhas.get(i.corredor)
-  const x = lay.rackX.get(`${i.corredor}|${i.posto}|${i.posicao}`) ?? 0
+  const l = lay.linhas.get(linhaDe(i))
+  const x = lay.rackX.get(`${linhaDe(i)}|${i.posto}|${i.posicao}`) ?? 0
   return { pos: new THREE.Vector3(x, 0.7, l?.z ?? 0), size: [BAY_W * 0.9, 0.4, DEPTH * 0.85] as [number, number, number] }
 }
 
 // lado do corredor para onde a câmera olha (onde fica a passagem)
 export function frenteItem(i: Item, lay: LayoutInfo): 1 | -1 {
   const p = i.tipo === 'prateleira' ? lay.prat.get(idPrat(i)) : undefined
-  return p?.frente ?? lay.linhas.get(i.corredor)?.frente ?? 1
+  return p?.frente ?? lay.linhas.get(linhaDe(i))?.frente ?? 1
 }
 
 // Rack: um andar só (bandeja grande), etiqueta na viga da frente
