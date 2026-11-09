@@ -143,7 +143,7 @@ export function geometriaItem(i: Item, lay: LayoutInfo) {
     const off = (i.posicao - 0.5) * cw
     const bh = esp * (n <= 3 ? 0.88 : n === 4 ? 0.74 : 0.68)
     return {
-      pos: new THREE.Vector3(p.espelhado ? p.x + util / 2 - off : p.x - util / 2 + off, SHELF_BASE + nivel(i.altura) * esp + bh / 2 + 0.03, p.z),
+      pos: new THREE.Vector3(p.x + p.frente * (util / 2 - off), SHELF_BASE + nivel(i.altura) * esp + bh / 2 + 0.03, p.z),
       size: [cw * 0.94, bh, SHELF_D * (n <= 3 ? 0.9 : 0.82)] as [number, number, number],
     }
   }
@@ -157,7 +157,9 @@ export function sentidoItem(i: Item, lay: LayoutInfo): 1 | -1 {
   const p = i.tipo === 'prateleira' ? lay.prat.get(idPrat(i)) : undefined
   const l = lay.linhas.get(linhaDe(i))
   const f = p?.frente ?? l?.frente ?? 1
-  return ((p?.espelhado ?? l?.espelhado) ? -f : f) as 1 | -1
+  const s = ((p?.espelhado ?? l?.espelhado) ? -f : f) as 1 | -1
+  // nas prateleiras as posições começam na direita (01 à direita, crescendo para a esquerda)
+  return (p ? -s : s) as 1 | -1
 }
 
 // lado do corredor para onde a câmera olha (onde fica a passagem)
