@@ -33,7 +33,7 @@ export const nomePrat = (p: { posto: number; corredor: number }) => `Prateleira 
 
 type Bloco = { tipo: 'rack'; posto: number; posicao: number; x: number } | { tipo: 'prat'; id: string; x: number; w: number }
 export type Linha = { corredor: number; z: number; frente: 1 | -1; espelhado: boolean; blocos: Bloco[]; vazio: boolean; xFim: number; largura: number; livres: Item[] }
-export type Prat = { id: string; posto: number; corredor: number; espelhado: boolean; x: number; z: number; frente: 1 | -1; w: number; h: number; niveis: number; cols: number }
+export type Prat = { id: string; posto: number; corredor: number; espelhado: boolean; x: number; z: number; frente: 1 | -1; w: number; h: number; niveis: number; cols: number; porAndar: Record<string, number> }
 type Cand = { chave: [number, number]; tipo: 'rack'; posto: number; posicao: number } | { chave: [number, number]; tipo: 'prat'; id: string }
 
 export function montarLayout(itens: Item[]) {
@@ -47,7 +47,10 @@ export function montarLayout(itens: Item[]) {
   const dim = (its: Item[]) => {
     const cols = Math.max(...its.map(i => i.posicao))
     const niveis = Math.max(3, ...its.map(i => nivel(i.altura) + 1))
-    return { cols, niveis, w: cols * BOX_W + 0.12, h: SHELF_BASE + niveis * SHELF_NIV + 0.06 }
+    // quantas caixas cabem em cada andar (a fileira do chão costuma ter poucas caixas grandes)
+    const porAndar: Record<string, number> = {}
+    for (const i of its) porAndar[i.altura] = Math.max(porAndar[i.altura] ?? 0, i.posicao)
+    return { cols, niveis, porAndar, w: cols * BOX_W + 0.12, h: SHELF_BASE + niveis * SHELF_NIV + 0.06 }
   }
 
   // corredores que não estão no mapa fixo entram depois, de dois em dois
@@ -133,10 +136,15 @@ export function geometriaItem(i: Item, lay: LayoutInfo) {
   const p = i.tipo === 'prateleira' ? lay.prat.get(idPrat(i)) : undefined
   if (p) {
     const esp = (p.h - SHELF_BASE - 0.06) / p.niveis
-    const bh = esp * 0.78
+    // cada andar reparte a largura entre as suas caixas; poucas caixas = caixas grandes e mais altas
+    const n = Math.max(1, p.porAndar[i.altura] ?? p.cols)
+    const util = p.w - 0.12
+    const cw = util / n
+    const off = (i.posicao - 0.5) * cw
+    const bh = esp * (n <= 3 ? 0.88 : n === 4 ? 0.74 : 0.68)
     return {
-      pos: new THREE.Vector3(p.espelhado ? p.x + p.w / 2 - 0.06 - (i.posicao - 0.5) * BOX_W : p.x - p.w / 2 + 0.06 + (i.posicao - 0.5) * BOX_W, SHELF_BASE + nivel(i.altura) * esp + bh / 2 + 0.03, p.z),
-      size: [BOX_W * 0.92, bh, SHELF_D * 0.82] as [number, number, number],
+      pos: new THREE.Vector3(p.espelhado ? p.x + util / 2 - off : p.x - util / 2 + off, SHELF_BASE + nivel(i.altura) * esp + bh / 2 + 0.03, p.z),
+      size: [cw * 0.94, bh, SHELF_D * (n <= 3 ? 0.9 : 0.82)] as [number, number, number],
     }
   }
   const l = lay.linhas.get(linhaDe(i))
@@ -328,18 +336,20 @@ export default function Cena({ itens, selecionado, foco, achados, onSel, onFoco,
       else {
         const p = lay.prat.get(b.id)!
         frames.push(<Prateleira key={`p${b.id}`} p={p} focada={foco === b.id} onFoco={onFoco} />)
-        frames.push(
-          <Html key={`pl${b.id}`} position={[p.x, p.h + 0.25, p.z]} center>
-            <div className="rotulo">{nomePrat(p)}</div>
-          </Html>,
-        )
+        if (foco == null || foco === b.id)
+          frames.push(
+            <Html key={`pl${b.id}`} position={[p.x, p.h + 0.25, p.z]} center>
+              <div className="rotulo">{nomePrat(p)}</div>
+            </Html>,
+          )
       }
     }
-    frames.push(
-      <Html key={`l${c}`} position={[-1.2, 1.6, l.z]} center>
-        <div className={`rotulo${l.vazio ? ' vazio' : ''}`}>Corredor {c}</div>
-      </Html>,
-    )
+    if (foco == null && !selecionado)
+      frames.push(
+        <Html key={`l${c}`} position={[-1.2, 1.6, l.z]} center>
+          <div className={`rotulo${l.vazio ? ' vazio' : ''}`}>Corredor {c}</div>
+        </Html>,
+      )
   }
 
   return (
