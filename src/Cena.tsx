@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Html } from '@react-three/drei'
 import * as THREE from 'three'
@@ -8,7 +8,6 @@ import { endereco, type Item } from './dados'
 const BAY_W = 1.2 // largura de cada rack
 const GAP = 0.08 // mini espaço entre racks
 const DEPTH = 1 // profundidade do rack
-const RACK_H = 0.95 // rack: um andar só, bandeja grande perto do chão
 const PASSAGEM = 1 // caminho do montador entre os corredores
 const LOGISTICO = 3 // corredor logístico (empilhadeira)
 const PITCH = DEPTH * 2 + PASSAGEM + LOGISTICO // distância entre pares de corredores
@@ -16,138 +15,168 @@ const BOX_W = 0.42 // largura de cada caixinha na prateleira
 const SHELF_D = 0.6 // profundidade da prateleira
 const SHELF_NIV = 0.52 // altura de cada andar da prateleira
 const SHELF_BASE = 0.15
+const VAZIO_BAYS = 8 // racks desenhados num corredor ainda sem endereços
 
-// Corredores que ficam de frente um para o outro
-const PARES: number[][] = [[10, 11]]
-// Prateleira (corredor 01) fica na linha do corredor 10, depois da posição 03 do posto 04
-const ENCAIXE: Record<number, { host: number; posto: number; posicao: number }> = { 1: { host: 10, posto: 4, posicao: 3 } }
+// Da esquerda para a direita: 11·10 | 9·8 | 7·6 | 5·4 | 3·2 | 1.
+// Cada par = [lado de trás, lado da frente]; o corredor 1 fica sozinho no canto.
+const PARES: number[][] = [[10, 11], [8, 9], [6, 7], [4, 5], [2, 3], [1]]
+// Prateleira que fica no meio da fileira de outro corredor (id "posto-corredor")
+const ENCAIXE: Record<string, { host: number; posto: number; posicao: number }> = { '4-1': { host: 10, posto: 4, posicao: 3 } }
 
 const nivel = (alt: string) => alt.charCodeAt(0) - 65
+const pad = (n: number) => String(n).padStart(2, '0')
+export const idPrat = (i: Item) => `${i.posto}-${i.corredor}`
+export const nomePrat = (p: { posto: number; corredor: number }) => `Prateleira ${pad(p.posto)} ${pad(p.corredor)}`
 
-type Salto = { depois: number; largura: number }
-type Layout = { z: number; frente: 1 | -1; posPorPosto: number; postos: number[]; saltos: Salto[] }
-export type Prat = { corredor: number; x: number; z: number; frente: 1 | -1; w: number; h: number; niveis: number; postos: number[]; posPorPosto: number }
-
-const colX = (l: Layout, posto: number, posicao: number) => {
-  const col = l.postos.indexOf(posto) * l.posPorPosto + (posicao - 1)
-  return col * (BAY_W + GAP) + l.saltos.filter(s => col > s.depois).reduce((a, s) => a + s.largura, 0)
-}
+type Bloco = { tipo: 'rack'; posto: number; posicao: number; x: number } | { tipo: 'prat'; id: string; x: number; w: number }
+export type Linha = { corredor: number; z: number; frente: 1 | -1; blocos: Bloco[]; vazio: boolean; xFim: number; livres: Item[] }
+export type Prat = { id: string; posto: number; corredor: number; x: number; z: number; frente: 1 | -1; w: number; h: number; niveis: number; cols: number }
+type Cand = { chave: [number, number]; tipo: 'rack'; posto: number; posicao: number } | { chave: [number, number]; tipo: 'prat'; id: string }
 
 export function montarLayout(itens: Item[]) {
-  const corrs = [...new Set(itens.map(i => i.corredor))].sort((a, b) => a - b)
-  const ehPrat = (c: number) => itens.filter(i => i.corredor === c).every(i => i.tipo === 'prateleira')
-  const racks = corrs.filter(c => !ehPrat(c))
-  const prats = corrs.filter(ehPrat)
-  const grupos: number[][] = PARES.filter(g => g.every(c => racks.includes(c))).map(g => [...g])
-  const resto = racks.filter(c => !grupos.flat().includes(c))
-  for (let k = 0; k < resto.length; k += 2) grupos.push(resto.slice(k, k + 2))
-  const soltas = prats.filter(c => !(ENCAIXE[c] && racks.includes(ENCAIXE[c].host)))
+  const comEnd = itens.filter(i => !i.semEndereco)
+  const grupos = new Map<string, Item[]>()
+  for (const i of comEnd)
+    if (i.tipo === 'prateleira') {
+      const k = idPrat(i)
+      grupos.set(k, [...(grupos.get(k) ?? []), i])
+    }
+  const dim = (its: Item[]) => {
+    const cols = Math.max(...its.map(i => i.posicao))
+    const niveis = Math.max(3, ...its.map(i => nivel(i.altura) + 1))
+    return { cols, niveis, w: cols * BOX_W + 0.12, h: SHELF_BASE + niveis * SHELF_NIV + 0.06 }
+  }
 
-  const map = new Map<number, Layout>()
-  grupos.forEach((g, par) =>
+  // corredores que não estão no mapa fixo entram depois, de dois em dois
+  const conhecidos = new Set(PARES.flat())
+  const extras = [...new Set(itens.map(i => i.corredor))].filter(c => !conhecidos.has(c)).sort((a, b) => a - b)
+  const pares = [...PARES]
+  for (let k = 0; k < extras.length; k += 2) pares.push(extras.slice(k, k + 2))
+
+  const linhas = new Map<number, Linha>()
+  const prat = new Map<string, Prat>()
+  const rackX = new Map<string, number>()
+  const passagens: number[] = []
+
+  pares.forEach((g, p) => {
+    if (g.length === 2) passagens.push(-p * PITCH)
     g.forEach((c, lado) => {
-      const doC = itens.filter(i => i.corredor === c)
-      map.set(c, {
-        frente: g.length === 1 || lado === 0 ? 1 : -1,
-        z: par * PITCH + (g.length === 1 ? 0 : lado ? 1 : -1) * (PASSAGEM / 2 + DEPTH / 2),
-        posPorPosto: Math.max(...doC.map(i => i.posicao)),
-        postos: [...new Set(doC.map(i => i.posto))].sort((a, b) => a - b),
-        saltos: [],
-      })
-    }),
-  )
+      const z = -p * PITCH + (g.length === 1 ? 0 : lado ? 1 : -1) * (PASSAGEM / 2 + DEPTH / 2)
+      const frente: 1 | -1 = g.length === 1 || lado === 0 ? 1 : -1
+      const cands: Cand[] = []
 
-  const dim = (c: number) => {
-    const doC = itens.filter(i => i.corredor === c)
-    const postos = [...new Set(doC.map(i => i.posto))].sort((a, b) => a - b)
-    const posPorPosto = Math.max(...doC.map(i => i.posicao))
-    const niveis = Math.max(3, ...doC.map(i => nivel(i.altura) + 1))
-    return { postos, posPorPosto, niveis, w: postos.length * posPorPosto * BOX_W + 0.12, h: SHELF_BASE + niveis * SHELF_NIV + 0.06 }
-  }
+      const racks = comEnd.filter(i => i.corredor === c && i.tipo !== 'prateleira')
+      for (const po of new Set(racks.map(i => i.posto))) {
+        const ps = racks.filter(i => i.posto === po).map(i => i.posicao)
+        for (let pos = Math.min(...ps); pos <= Math.max(...ps); pos++) cands.push({ chave: [po, pos], tipo: 'rack', posto: po, posicao: pos })
+      }
+      for (const [id, its] of grupos) {
+        const enc = ENCAIXE[id]
+        if (enc) {
+          if (enc.host === c) cands.push({ chave: [enc.posto, enc.posicao + 0.5], tipo: 'prat', id })
+        } else if (its[0].corredor === c) cands.push({ chave: [its[0].posto, Math.min(...its.map(i => i.posicao))], tipo: 'prat', id })
+      }
+      cands.sort((a, b) => a.chave[0] - b.chave[0] || a.chave[1] - b.chave[1])
+      const vazio = cands.length === 0
+      if (vazio) for (let pos = 1; pos <= VAZIO_BAYS; pos++) cands.push({ chave: [0, pos], tipo: 'rack', posto: 0, posicao: pos })
 
-  const prat = new Map<number, Prat>()
-  for (const c of prats.filter(c => !soltas.includes(c))) {
-    const enc = ENCAIXE[c]
-    const host = map.get(enc.host)!
-    const d = dim(c)
-    const col = host.postos.indexOf(enc.posto) * host.posPorPosto + enc.posicao - 1
-    const x0 = colX(host, enc.posto, enc.posicao)
-    host.saltos.push({ depois: col, largura: d.w + GAP })
-    prat.set(c, { corredor: c, x: x0 + BAY_W / 2 + GAP + d.w / 2, z: host.z, frente: host.frente, ...d })
-  }
-  soltas.forEach((c, k) => {
-    const d = dim(c)
-    prat.set(c, { corredor: c, x: d.w / 2, z: (grupos.length + k) * PITCH, frente: 1, ...d })
+      let x = 0
+      const blocos: Bloco[] = []
+      for (const b of cands) {
+        if (b.tipo === 'rack') {
+          blocos.push({ tipo: 'rack', posto: b.posto, posicao: b.posicao, x: x + BAY_W / 2 })
+          rackX.set(`${c}|${b.posto}|${b.posicao}`, x + BAY_W / 2)
+          x += BAY_W + GAP
+        } else {
+          const d = dim(grupos.get(b.id)!)
+          const [po, co] = b.id.split('-').map(Number)
+          prat.set(b.id, { id: b.id, posto: po, corredor: co, x: x + d.w / 2, z, frente, ...d })
+          blocos.push({ tipo: 'prat', id: b.id, x: x + d.w / 2, w: d.w })
+          x += d.w + GAP
+        }
+      }
+      linhas.set(c, { corredor: c, z, frente, blocos, vazio, xFim: x - GAP, livres: itens.filter(i => i.semEndereco && i.corredor === c) })
+    })
   })
 
   let xMax = 1
-  for (const l of map.values()) {
-    const ult = l.postos[l.postos.length - 1]
-    xMax = Math.max(xMax, colX(l, ult, l.posPorPosto) + BAY_W / 2)
-  }
-  for (const p of prat.values()) xMax = Math.max(xMax, p.x + p.w / 2)
-  return { map, prat, xMax, pares: grupos.length + soltas.length }
+  for (const l of linhas.values()) xMax = Math.max(xMax, l.xFim + (l.livres.length ? 1.6 + l.livres.length * 1.3 : 0))
+  return { linhas, prat, rackX, passagens, xMax, pares: pares.length }
 }
 export type LayoutInfo = ReturnType<typeof montarLayout>
 
 // posição 3D e tamanho da caixa de cada item
 export function geometriaItem(i: Item, lay: LayoutInfo) {
-  const p = lay.prat.get(i.corredor)
-  if (i.tipo === 'prateleira' && p) {
-    const col = p.postos.indexOf(i.posto) * p.posPorPosto + i.posicao - 1
+  if (i.semEndereco) {
+    const l = lay.linhas.get(i.corredor)
+    const k = l ? l.livres.indexOf(i) : 0
+    return { pos: new THREE.Vector3((l?.xFim ?? 0) + 1.1 + k * 1.3, 0.28, l?.z ?? 0), size: [1.0, 0.56, 0.8] as [number, number, number] }
+  }
+  const p = i.tipo === 'prateleira' ? lay.prat.get(idPrat(i)) : undefined
+  if (p) {
     const esp = (p.h - SHELF_BASE - 0.06) / p.niveis
     const bh = esp * 0.78
     return {
-      pos: new THREE.Vector3(p.x - p.w / 2 + 0.06 + (col + 0.5) * BOX_W, SHELF_BASE + nivel(i.altura) * esp + bh / 2 + 0.03, p.z),
+      pos: new THREE.Vector3(p.x - p.w / 2 + 0.06 + (i.posicao - 0.5) * BOX_W, SHELF_BASE + nivel(i.altura) * esp + bh / 2 + 0.03, p.z),
       size: [BOX_W * 0.92, bh, SHELF_D * 0.82] as [number, number, number],
     }
   }
-  const l = lay.map.get(i.corredor)!
-  return { pos: new THREE.Vector3(colX(l, i.posto, i.posicao), 0.7, l.z), size: [BAY_W * 0.9, 0.4, DEPTH * 0.85] as [number, number, number] }
+  const l = lay.linhas.get(i.corredor)
+  const x = lay.rackX.get(`${i.corredor}|${i.posto}|${i.posicao}`) ?? 0
+  return { pos: new THREE.Vector3(x, 0.7, l?.z ?? 0), size: [BAY_W * 0.9, 0.4, DEPTH * 0.85] as [number, number, number] }
+}
+
+// lado do corredor para onde a câmera olha (onde fica a passagem)
+export function frenteItem(i: Item, lay: LayoutInfo): 1 | -1 {
+  const p = i.tipo === 'prateleira' ? lay.prat.get(idPrat(i)) : undefined
+  return p?.frente ?? lay.linhas.get(i.corredor)?.frente ?? 1
 }
 
 // Rack: um andar só (bandeja grande), etiqueta na viga da frente
-function Rack({ x, z, frente }: { x: number; z: number; frente: 1 | -1 }) {
+function Rack({ x, z, frente, ghost }: { x: number; z: number; frente: 1 | -1; ghost?: boolean }) {
   const w = BAY_W, d = DEPTH
+  const mat = (c: string) => <meshStandardMaterial color={ghost ? '#5b6573' : c} transparent={!!ghost} opacity={ghost ? 0.3 : 1} depthWrite={!ghost} />
   return (
     <group position={[x, 0, z]}>
       {([[-1, -1], [1, -1], [-1, 1], [1, 1]] as const).map(([a, b], k) => (
         <mesh key={k} position={[(a * (w - 0.12)) / 2, 0.22, (b * (d - 0.12)) / 2]}>
           <boxGeometry args={[0.08, 0.44, 0.08]} />
-          <meshStandardMaterial color="#1c1f24" />
+          {mat('#1c1f24')}
         </mesh>
       ))}
       {[-1, 1].map(b => (
         <mesh key={`f${b}`} position={[0, 0.46, (b * (d - 0.12)) / 2]}>
           <boxGeometry args={[w, 0.07, 0.08]} />
-          <meshStandardMaterial color="#24282e" />
+          {mat('#24282e')}
         </mesh>
       ))}
       {[-1, 1].map(a => (
         <mesh key={`s${a}`} position={[(a * (w - 0.12)) / 2, 0.46, 0]}>
           <boxGeometry args={[0.08, 0.07, d]} />
-          <meshStandardMaterial color="#24282e" />
+          {mat('#24282e')}
         </mesh>
       ))}
       <mesh position={[0, 0.52, 0]}>
         <boxGeometry args={[w - 0.04, 0.05, d - 0.04]} />
-        <meshStandardMaterial color="#3f7d4a" />
+        {mat('#3f7d4a')}
       </mesh>
-      <mesh position={[0, 0.46, frente * ((d - 0.12) / 2 + 0.045)]}>
-        <boxGeometry args={[0.5, 0.14, 0.01]} />
-        <meshStandardMaterial color="#f2f2f2" />
-      </mesh>
+      {!ghost && (
+        <mesh position={[0, 0.46, frente * ((d - 0.12) / 2 + 0.045)]}>
+          <boxGeometry args={[0.5, 0.14, 0.01]} />
+          <meshStandardMaterial color="#f2f2f2" />
+        </mesh>
+      )}
     </group>
   )
 }
 
-// Prateleira: 3 andares, caixas lado a lado. Clicar nela dá zoom.
-function Prateleira({ p, focada, onFoco }: { p: Prat; focada: boolean; onFoco: (c: number) => void }) {
+// Prateleira: vários andares, caixas lado a lado. Clicar nela dá zoom.
+function Prateleira({ p, focada, onFoco }: { p: Prat; focada: boolean; onFoco: (id: string) => void }) {
   const esp = (p.h - SHELF_BASE - 0.06) / p.niveis
   return (
     <group
       position={[p.x, 0, p.z]}
-      onClick={e => { e.stopPropagation(); onFoco(p.corredor) }}
+      onClick={e => { e.stopPropagation(); onFoco(p.id) }}
       onPointerOver={e => { e.stopPropagation(); document.body.style.cursor = 'pointer' }}
       onPointerOut={() => { document.body.style.cursor = 'auto' }}
     >
@@ -167,8 +196,8 @@ function Prateleira({ p, focada, onFoco }: { p: Prat; focada: boolean; onFoco: (
   )
 }
 
-type Estado = 'normal' | 'achado' | 'selecionado' | 'apagado'
-const CORES: Record<Estado, string> = { normal: '#c9a26b', achado: '#4cd964', selecionado: '#ff8a00', apagado: '#4a4f57' }
+type Estado = 'normal' | 'obs' | 'achado' | 'selecionado' | 'apagado'
+const CORES: Record<Estado, string> = { normal: '#c9a26b', obs: '#c4684f', achado: '#4cd964', selecionado: '#ff8a00', apagado: '#4a4f57' }
 
 function Caixa({ item, lay, estado, onSel, onHover }: { item: Item; lay: LayoutInfo; estado: Estado; onSel: (i: Item) => void; onHover: (i: Item | null) => void }) {
   const { pos, size } = geometriaItem(item, lay)
@@ -199,34 +228,42 @@ function Camera({ vista }: { vista: React.MutableRefObject<Vista> }) {
     else camera.position.add(ctrl.current.target.clone().sub(antes))
     ctrl.current.update()
   })
-  return <OrbitControls ref={ctrl} makeDefault maxPolarAngle={Math.PI / 2.05} minDistance={0.8} maxDistance={60} />
+  return <OrbitControls ref={ctrl} makeDefault maxPolarAngle={Math.PI / 2.05} minDistance={0.8} maxDistance={90} />
 }
-
-const VISTA_GERAL = new THREE.Vector3(0, 13, 12)
 
 type Props = {
   itens: Item[]
   selecionado: Item | null
-  foco: number | null // corredor da prateleira em zoom
+  foco: string | null // id da prateleira em zoom ("posto-corredor")
   achados: Set<Item> | null
   onSel: (i: Item) => void
-  onFoco: (c: number) => void
+  onFoco: (id: string) => void
   onFundo: () => void
   preset: { c: number | null; n: number } | null // atalho de câmera
 }
 
 export default function Cena({ itens, selecionado, foco, achados, onSel, onFoco, onFundo, preset }: Props) {
   const lay = useMemo(() => montarLayout(itens), [itens])
-  const centro = useMemo(() => new THREE.Vector3(lay.xMax / 2, 1, ((lay.pares - 1) * PITCH) / 2), [lay])
+  const profund = lay.pares * PITCH
+  const centro = useMemo(() => new THREE.Vector3(lay.xMax / 2, 1, -((lay.pares - 1) * PITCH) / 2), [lay])
   const vista = useRef<Vista>({ alvo: new THREE.Vector3(), off: null, n: 0 })
   const chave = useRef('')
   const presetVisto = useRef(-1)
-  // tela em pé (celular) precisa de mais distância para caber o corredor
+  // tela em pé (celular) precisa de mais distância para caber tudo
   const asp = window.innerWidth / window.innerHeight
   const afasta = (k: number) => Math.max(1, k / asp)
   const [hover, setHover] = useState<Item | null>(null)
+  // tela deitada: corredores na vertical e pares da esquerda para a direita; em pé: pares de cima para baixo
+  const [paisagem, setPaisagem] = useState(() => window.innerWidth >= window.innerHeight)
+  useEffect(() => {
+    const f = () => setPaisagem(window.innerWidth >= window.innerHeight)
+    window.addEventListener('resize', f)
+    return () => window.removeEventListener('resize', f)
+  }, [])
+  const ang = paisagem ? -Math.PI / 2 : Math.PI
+  const R = (v: THREE.Vector3) => v.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), ang)
 
-  const k = `${foco ?? ''}|${selecionado ? itens.indexOf(selecionado) : ''}|${preset?.n ?? ''}`
+  const k = `${foco ?? ''}|${selecionado ? itens.indexOf(selecionado) : ''}|${preset?.n ?? ''}|${paisagem ? 1 : 0}`
   if (k !== chave.current) {
     chave.current = k
     const v = vista.current
@@ -234,69 +271,76 @@ export default function Cena({ itens, selecionado, foco, achados, onSel, onFoco,
     const novoPreset = preset && preset.n !== presetVisto.current ? preset : null
     if (preset) presetVisto.current = preset.n
     if (p) {
-      v.alvo.set(p.x, p.h / 2, p.z)
-      v.off = new THREE.Vector3(0, 0.7 * afasta(0.7), p.frente * 3.2 * afasta(0.7))
+      v.alvo.copy(R(new THREE.Vector3(p.x, p.h / 2 + 0.25, p.z)))
+      const d = Math.max(3.2, p.h * 1.7) * afasta(0.7)
+      v.off = R(new THREE.Vector3(0, 0.7 * afasta(0.7), p.frente * d))
     } else if (selecionado) {
       const g = geometriaItem(selecionado, lay)
-      v.alvo.copy(g.pos)
+      v.alvo.copy(R(g.pos))
       const fa = afasta(0.9)
-      v.off = new THREE.Vector3(0, 1.3 * fa, (lay.map.get(selecionado.corredor)?.frente ?? 1) * 3 * fa)
-    } else if (novoPreset && novoPreset.c != null && lay.map.get(novoPreset.c)) {
-      const l = lay.map.get(novoPreset.c)!
-      v.alvo.set(lay.xMax / 2, 0.5, l.z)
-      v.off = new THREE.Vector3(0, 7.5 * afasta(0.95), l.frente * 8.5 * afasta(0.95))
+      v.off = R(new THREE.Vector3(0, 1.3 * fa, frenteItem(selecionado, lay) * 3 * fa))
+    } else if (novoPreset && novoPreset.c != null && lay.linhas.get(novoPreset.c)) {
+      const l = lay.linhas.get(novoPreset.c)!
+      v.alvo.copy(R(new THREE.Vector3(l.xFim / 2, 0.5, l.z)))
+      v.off = R(new THREE.Vector3(0, 7.5 * afasta(0.95), l.frente * 8.5 * afasta(0.95)))
     } else {
-      v.alvo.copy(centro)
-      v.off = VISTA_GERAL.clone().multiplyScalar(afasta(0.6))
+      v.alvo.copy(R(centro))
+      // distância para caber o mapa inteiro (eixo longo = pares, eixo curto = comprimento dos corredores)
+      const t = 0.828
+      const longo = lay.pares * PITCH, curto = lay.xMax + 6
+      const dist = 1.15 * Math.max(longo / (t * (paisagem ? asp : 1)), curto / (t * (paisagem ? 1 : asp)))
+      v.off = new THREE.Vector3(0, dist * 0.85, dist * 0.5)
     }
     v.n = 90
   }
 
   const comprimento = lay.xMax + 2
   const frames: JSX.Element[] = []
-  for (const [c, l] of lay.map) {
-    for (const posto of l.postos)
-      for (let pos = 1; pos <= l.posPorPosto; pos++)
-        frames.push(<Rack key={`${c}-${posto}-${pos}`} x={colX(l, posto, pos)} z={l.z} frente={l.frente} />)
+  for (const [c, l] of lay.linhas) {
+    for (const b of l.blocos) {
+      if (b.tipo === 'rack') frames.push(<Rack key={`${c}-${b.posto}-${b.posicao}`} x={b.x} z={l.z} frente={l.frente} ghost={l.vazio} />)
+      else {
+        const p = lay.prat.get(b.id)!
+        frames.push(<Prateleira key={`p${b.id}`} p={p} focada={foco === b.id} onFoco={onFoco} />)
+        frames.push(
+          <Html key={`pl${b.id}`} position={[p.x, p.h + 0.25, p.z]} center>
+            <div className="rotulo">{nomePrat(p)}</div>
+          </Html>,
+        )
+      }
+    }
     frames.push(
       <Html key={`l${c}`} position={[-1.2, 1.6, l.z]} center>
-        <div className="rotulo">Corredor {c}</div>
-      </Html>,
-    )
-  }
-  for (const p of lay.prat.values()) {
-    frames.push(<Prateleira key={`p${p.corredor}`} p={p} focada={foco === p.corredor} onFoco={onFoco} />)
-    frames.push(
-      <Html key={`pl${p.corredor}`} position={[p.x, p.h + 0.25, p.z]} center>
-        <div className="rotulo">Prateleira {String(p.corredor).padStart(2, '0')}</div>
+        <div className={`rotulo${l.vazio ? ' vazio' : ''}`}>Corredor {c}</div>
       </Html>,
     )
   }
 
   return (
-    <Canvas dpr={[1, 1.75]} camera={{ position: [0, 24, 15], fov: 45 }} onPointerMissed={onFundo}>
+    <Canvas dpr={[1, 1.75]} camera={{ position: [0, 26, 16], fov: 45 }} onPointerMissed={onFundo}>
       <color attach="background" args={['#10151c']} />
       <ambientLight intensity={0.75} />
       <directionalLight position={[10, 18, 8]} intensity={1.1} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[comprimento / 2 - 1, 0, ((lay.pares - 1) * PITCH) / 2]}>
+      <group rotation={[0, ang, 0]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[comprimento / 2 - 1, 0, -((lay.pares - 1) * PITCH) / 2]}>
         <planeGeometry args={[comprimento + 4, lay.pares * PITCH + 4]} />
         <meshStandardMaterial color="#2b323b" />
       </mesh>
       {Array.from({ length: lay.pares + 1 }, (_, k) => (
-        <mesh key={`log${k}`} rotation={[-Math.PI / 2, 0, 0]} position={[comprimento / 2 - 1, 0.01, k * PITCH - PITCH / 2]}>
+        <mesh key={`log${k}`} rotation={[-Math.PI / 2, 0, 0]} position={[comprimento / 2 - 1, 0.01, PITCH / 2 - k * PITCH]}>
           <planeGeometry args={[comprimento, LOGISTICO]} />
           <meshStandardMaterial color="#6e5a1e" />
         </mesh>
       ))}
-      {Array.from({ length: lay.pares }, (_, k) => (
-        <mesh key={`pas${k}`} rotation={[-Math.PI / 2, 0, 0]} position={[comprimento / 2 - 1, 0.01, k * PITCH]}>
+      {lay.passagens.map((z, k) => (
+        <mesh key={`pas${k}`} rotation={[-Math.PI / 2, 0, 0]} position={[comprimento / 2 - 1, 0.01, z]}>
           <planeGeometry args={[comprimento, PASSAGEM]} />
           <meshStandardMaterial color="#35503a" />
         </mesh>
       ))}
       {frames}
       {itens.map((it, i) => {
-        const estado: Estado = it === selecionado ? 'selecionado' : achados ? (achados.has(it) ? 'achado' : 'apagado') : 'normal'
+        const estado: Estado = it === selecionado ? 'selecionado' : achados ? (achados.has(it) ? 'achado' : 'apagado') : it.obs ? 'obs' : 'normal'
         return <Caixa key={i} item={it} lay={lay} estado={estado} onSel={onSel} onHover={setHover} />
       })}
       {hover && hover !== selecionado && (() => {
@@ -307,6 +351,7 @@ export default function Cena({ itens, selecionado, foco, achados, onSel, onFoco,
           </Html>
         )
       })()}
+      </group>
       <Camera vista={vista} />
     </Canvas>
   )
