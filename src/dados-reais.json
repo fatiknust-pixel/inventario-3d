@@ -515,7 +515,7 @@
   "tipo": "rack",
   "local": 1,
   "ordem": 1,
-  "fotoEtiqueta": "local-02-06-04-A.jpg"
+  "foto": "prateleira-02-06-04-A.jpg"
  },
  {
   "posto": 2,
@@ -527,6 +527,7 @@
   "obs": "Caixa com pára-lama de código A9408811401. Peça não é mais utilizada (AXOR antigo).",
   "tipo": "rack",
   "local": 1,
-  "ordem": 2
+  "ordem": 2,
+  "foto": "caixa-02-06-05-A.jpg"
  }
 ]
