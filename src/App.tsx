@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Cena, { frenteItem, idPrat, montarLayout, nomePrat } from './Cena'
+import Cena, { sentidoItem, idPrat, montarLayout, nomePrat } from './Cena'
 import { Item, linhaDe, baixarModelo, fotoDaPeca, fotoEtiquetaSrc, dadosExemplo, dadosReais, endereco, fotoSrc, lerExcel, placeholder } from './dados'
 
 type Dir = 'mais' | 'menos' | 'cima' | 'baixo'
@@ -49,7 +49,7 @@ export default function App() {
     return linha[linha.indexOf(sel) + (d === 'mais' ? 1 : -1)]
   }
   // esquerda/direita na tela dependem de que lado do corredor a câmera está
-  const lado = (esq: boolean): Dir => ((esq ? 1 : -1) * (sel ? frenteItem(sel, lay) : 1) === 1 ? 'menos' : 'mais')
+  const lado = (esq: boolean): Dir => ((esq ? 1 : -1) * (sel ? sentidoItem(sel, lay) : 1) === 1 ? 'menos' : 'mais')
   function mover(d: Dir) { const v = vizinho(d); if (v) escolher(v) }
 
   useEffect(() => {
