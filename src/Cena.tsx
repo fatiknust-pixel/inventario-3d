@@ -20,6 +20,9 @@ const VAZIO_BAYS = 8 // racks desenhados num corredor ainda sem endereços
 // Da esquerda para a direita: 11·10 | 9·8 | 7·6 | 5·4 | 3·2 | 1.
 // Cada par = [lado de trás, lado da frente]; o corredor 1 fica sozinho no canto.
 const PARES: number[][] = [[10, 11], [8, 9], [6, 7], [4, 5], [2, 3], [1]]
+// Corredores girados 180°: as caixas ficam viradas para o lado oposto ao corredor de logística
+// e a fila é lida da esquerda para a direita quando vista de frente.
+const ESPELHAR = new Set([1])
 // Prateleira que fica no meio da fileira de outro corredor (id "posto-corredor")
 const ENCAIXE: Record<string, { host: number; posto: number; posicao: number }> = { '4-1': { host: 10, posto: 4, posicao: 3 } }
 
@@ -29,8 +32,8 @@ export const idPrat = (i: Item) => `${i.posto}-${i.corredor}`
 export const nomePrat = (p: { posto: number; corredor: number }) => `Prateleira ${pad(p.posto)} ${pad(p.corredor)}`
 
 type Bloco = { tipo: 'rack'; posto: number; posicao: number; x: number } | { tipo: 'prat'; id: string; x: number; w: number }
-export type Linha = { corredor: number; z: number; frente: 1 | -1; blocos: Bloco[]; vazio: boolean; xFim: number; livres: Item[] }
-export type Prat = { id: string; posto: number; corredor: number; x: number; z: number; frente: 1 | -1; w: number; h: number; niveis: number; cols: number }
+export type Linha = { corredor: number; z: number; frente: 1 | -1; espelhado: boolean; blocos: Bloco[]; vazio: boolean; xFim: number; largura: number; livres: Item[] }
+export type Prat = { id: string; posto: number; corredor: number; espelhado: boolean; x: number; z: number; frente: 1 | -1; w: number; h: number; niveis: number; cols: number }
 type Cand = { chave: [number, number]; tipo: 'rack'; posto: number; posicao: number } | { chave: [number, number]; tipo: 'prat'; id: string }
 
 export function montarLayout(itens: Item[]) {
@@ -62,7 +65,8 @@ export function montarLayout(itens: Item[]) {
     if (g.length === 2) passagens.push(-p * PITCH)
     g.forEach((c, lado) => {
       const z = -p * PITCH + (g.length === 1 ? 0 : lado ? 1 : -1) * (PASSAGEM / 2 + DEPTH / 2)
-      const frente: 1 | -1 = g.length === 1 || lado === 0 ? 1 : -1
+      const espelhado = ESPELHAR.has(c)
+      const frente: 1 | -1 = espelhado ? -1 : g.length === 1 || lado === 0 ? 1 : -1
       const cands: Cand[] = []
 
       const racks = comEnd.filter(i => linhaDe(i) === c && i.tipo !== 'prateleira')
@@ -94,17 +98,26 @@ export function montarLayout(itens: Item[]) {
         } else {
           const d = dim(grupos.get(b.id)!)
           const [po, co] = b.id.split('-').map(Number)
-          prat.set(b.id, { id: b.id, posto: po, corredor: co, x: x + d.w / 2, z, frente, ...d })
+          prat.set(b.id, { id: b.id, posto: po, corredor: co, espelhado, x: x + d.w / 2, z, frente, ...d })
           blocos.push({ tipo: 'prat', id: b.id, x: x + d.w / 2, w: d.w })
           x += d.w + GAP
         }
       }
-      linhas.set(c, { corredor: c, z, frente, blocos, vazio, xFim: x - GAP, livres: itens.filter(i => i.semEndereco && linhaDe(i) === c) })
+      const livres = itens.filter(i => i.semEndereco && linhaDe(i) === c)
+      const xFim = x - GAP
+      const largura = xFim + (livres.length ? 1.1 + (livres.length - 1) * 1.3 + 0.7 : 0)
+      if (espelhado) {
+        // gira a fila de ponta a ponta: o que era o primeiro da esquerda passa a ficar à direita de quem olha de frente
+        for (const bl of blocos) bl.x = largura - bl.x
+        for (const k of [...rackX.keys()]) if (k.startsWith(`${c}|`)) rackX.set(k, largura - rackX.get(k)!)
+        for (const pr of prat.values()) if (pr.z === z) pr.x = largura - pr.x
+      }
+      linhas.set(c, { corredor: c, z, frente, espelhado, blocos, vazio, xFim, largura, livres })
     })
   })
 
   let xMax = 1
-  for (const l of linhas.values()) xMax = Math.max(xMax, l.xFim + (l.livres.length ? 1.6 + l.livres.length * 1.3 : 0))
+  for (const l of linhas.values()) xMax = Math.max(xMax, l.largura)
   return { linhas, prat, rackX, passagens, xMax, pares: pares.length }
 }
 export type LayoutInfo = ReturnType<typeof montarLayout>
@@ -114,20 +127,29 @@ export function geometriaItem(i: Item, lay: LayoutInfo) {
   if (i.semEndereco) {
     const l = lay.linhas.get(linhaDe(i))
     const k = l ? l.livres.indexOf(i) : 0
-    return { pos: new THREE.Vector3((l?.xFim ?? 0) + 1.1 + k * 1.3, 0.28, l?.z ?? 0), size: [1.0, 0.56, 0.8] as [number, number, number] }
+    const xr = (l?.xFim ?? 0) + 1.1 + k * 1.3
+    return { pos: new THREE.Vector3(l?.espelhado ? l.largura - xr : xr, 0.28, l?.z ?? 0), size: [1.0, 0.56, 0.8] as [number, number, number] }
   }
   const p = i.tipo === 'prateleira' ? lay.prat.get(idPrat(i)) : undefined
   if (p) {
     const esp = (p.h - SHELF_BASE - 0.06) / p.niveis
     const bh = esp * 0.78
     return {
-      pos: new THREE.Vector3(p.x - p.w / 2 + 0.06 + (i.posicao - 0.5) * BOX_W, SHELF_BASE + nivel(i.altura) * esp + bh / 2 + 0.03, p.z),
+      pos: new THREE.Vector3(p.espelhado ? p.x + p.w / 2 - 0.06 - (i.posicao - 0.5) * BOX_W : p.x - p.w / 2 + 0.06 + (i.posicao - 0.5) * BOX_W, SHELF_BASE + nivel(i.altura) * esp + bh / 2 + 0.03, p.z),
       size: [BOX_W * 0.92, bh, SHELF_D * 0.82] as [number, number, number],
     }
   }
   const l = lay.linhas.get(linhaDe(i))
   const x = lay.rackX.get(`${linhaDe(i)}|${i.posto}|${i.posicao}`) ?? 0
   return { pos: new THREE.Vector3(x, 0.7, l?.z ?? 0), size: [BAY_W * 0.9, 0.4, DEPTH * 0.85] as [number, number, number] }
+}
+
+// +1 se, olhando de frente, a ordem dos endereços cresce para a direita; -1 se cresce para a esquerda
+export function sentidoItem(i: Item, lay: LayoutInfo): 1 | -1 {
+  const p = i.tipo === 'prateleira' ? lay.prat.get(idPrat(i)) : undefined
+  const l = lay.linhas.get(linhaDe(i))
+  const f = p?.frente ?? l?.frente ?? 1
+  return ((p?.espelhado ?? l?.espelhado) ? -f : f) as 1 | -1
 }
 
 // lado do corredor para onde a câmera olha (onde fica a passagem)
@@ -285,7 +307,7 @@ export default function Cena({ itens, selecionado, foco, achados, onSel, onFoco,
       v.off = R(new THREE.Vector3(0, 1.3 * fa, frenteItem(selecionado, lay) * 3 * fa))
     } else if (novoPreset && novoPreset.c != null && lay.linhas.get(novoPreset.c)) {
       const l = lay.linhas.get(novoPreset.c)!
-      v.alvo.copy(R(new THREE.Vector3(l.xFim / 2, 0.5, l.z)))
+      v.alvo.copy(R(new THREE.Vector3(l.largura / 2, 0.5, l.z)))
       v.off = R(new THREE.Vector3(0, 7.5 * afasta(0.95), l.frente * 8.5 * afasta(0.95)))
     } else {
       v.alvo.copy(R(centro))

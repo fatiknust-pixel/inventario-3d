@@ -514,7 +514,8 @@
   "obs": "Prateleira com peças não usáveis no lugar; a caixa certa está ao lado. A prateleira não tem nenhum endereço e nenhuma peça.",
   "tipo": "rack",
   "local": 1,
-  "ordem": 1
+  "ordem": 1,
+  "fotoEtiqueta": "local-02-06-04-A.jpg"
  },
  {
   "posto": 2,
