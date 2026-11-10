@@ -211,8 +211,8 @@ export default function App() {
           {sel.lofo && <div>Lofo: {sel.lofo}</div>}
           {sel.embalagem && <div>Emb.: {sel.embalagem}</div>}
           {sel.qtd && <div>Quant./Embal.: {sel.qtd}</div>}
-          {sel.status && <div className={`situacao ${sel.status}`}>{sel.status === 'ok' ? 'Certo' : sel.status === 'duvida' ? 'Dúvida' : 'Erro'}</div>}
-          {sel.obs && <div className={`obs ${sel.status ?? ''}`}><b>Observação:</b> {sel.obs}</div>}
+          {sel.status && <div className={`situacao st-${sel.status}`}>{sel.status === 'ok' ? 'Certo' : sel.status === 'duvida' ? 'Dúvida' : 'Erro'}</div>}
+          {sel.obs && <div className={`obs${sel.status ? ` st-${sel.status}` : ''}`}><b>Observação:</b> {sel.obs}</div>}
           <div className="acoes">
             <button className="btn nav" title="Caixa à esquerda" disabled={!alvoSetas(-1)} onClick={() => andar(-1)}>◀</button>
             <button className="btn nav" title="Andar de cima (na prateleira)" disabled={!alvoVertical('cima')} onClick={() => subir('cima')}>▲</button>
