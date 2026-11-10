@@ -17,6 +17,7 @@ export type Item = {
   tipo?: 'rack' | 'prateleira'
   cor?: string // código de cor que vem junto do código da peça (ex.: 7277)
   obs?: string // observação de campo
+  status?: 'ok' | 'duvida' | 'erro' // conferência: certo (verde), dúvida (amarelo), erro (vermelho); sem valor = ainda não conferido
   semEndereco?: boolean // caixa sem endereço (ex.: no chão)
   local?: number // corredor onde a caixa está de fato, quando o endereço escrito diz outro
   ordem?: number // posição na fila física do corredor, quando a ordem dos endereços não vale
@@ -93,13 +94,22 @@ const COLUNAS: Record<string, keyof Item | 'coordenador'> = {
   item: 'codigo', codigo: 'codigo', peca: 'codigo',
   descricao: 'nome', nome: 'nome', nomedapeca: 'nome',
   lofo: 'lofo',
-  cor: 'cor', obs: 'obs', observacao: 'obs',
+  cor: 'cor', obs: 'obs', observacao: 'obs', status: 'status', situacao: 'status',
   embalagem: 'embalagem', emb: 'embalagem',
   qtd: 'qtd', quantidade: 'qtd', qtdembal: 'qtd',
   foto: 'foto', fotopeca: 'foto', fotodapeca: 'foto',
   fotoetiqueta: 'fotoEtiqueta', etiqueta: 'fotoEtiqueta',
   tipo: 'tipo',
   coordenador: 'coordenador', cordinator: 'coordenador', endereco: 'coordenador',
+}
+
+// aceita ok/certo/verde, duvida/dúvida/amarelo e erro/vermelho
+function statusDe(v?: string): Item['status'] {
+  const t = norm(v ?? '')
+  if (['ok', 'certo', 'verde', 'correto'].includes(t)) return 'ok'
+  if (['duvida', 'amarelo', 'atencao'].includes(t)) return 'duvida'
+  if (['erro', 'vermelho', 'errado'].includes(t)) return 'erro'
+  return undefined
 }
 
 export async function lerExcel(file: File): Promise<Item[]> {
@@ -121,7 +131,7 @@ export async function lerExcel(file: File): Promise<Item[]> {
     if (!r.altura || [posto, corredor, posicao].some(isNaN)) continue
     itens.push({
       posto, corredor, posicao, altura: r.altura.toUpperCase(),
-      codigo: r.codigo ?? '', nome: r.nome ?? '', lofo: r.lofo, cor: r.cor || undefined, obs: r.obs || undefined, embalagem: r.embalagem, qtd: r.qtd,
+      codigo: r.codigo ?? '', nome: r.nome ?? '', lofo: r.lofo, cor: r.cor || undefined, obs: r.obs || undefined, status: statusDe(r.status), embalagem: r.embalagem, qtd: r.qtd,
       foto: r.foto || undefined, fotoEtiqueta: r.fotoEtiqueta || undefined,
       tipo: r.tipo?.toLowerCase().startsWith('prat') ? 'prateleira' : 'rack',
     })

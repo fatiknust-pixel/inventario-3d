@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Cena, { geometriaItem, idPrat, montarLayout, nomePrat } from './Cena'
+import Cena, { CORES, geometriaItem, idPrat, montarLayout, nomePrat } from './Cena'
 import { Item, linhaDe, baixarModelo, fotoDaPeca, fotoEtiquetaSrc, dadosExemplo, dadosReais, endereco, fotoSrc, lerExcel, placeholder } from './dados'
 
 export default function App() {
@@ -211,7 +211,8 @@ export default function App() {
           {sel.lofo && <div>Lofo: {sel.lofo}</div>}
           {sel.embalagem && <div>Emb.: {sel.embalagem}</div>}
           {sel.qtd && <div>Quant./Embal.: {sel.qtd}</div>}
-          {sel.obs && <div className="obs"><b>Observação:</b> {sel.obs}</div>}
+          {sel.status && <div className={`situacao ${sel.status}`}>{sel.status === 'ok' ? 'Certo' : sel.status === 'duvida' ? 'Dúvida' : 'Erro'}</div>}
+          {sel.obs && <div className={`obs ${sel.status ?? ''}`}><b>Observação:</b> {sel.obs}</div>}
           <div className="acoes">
             <button className="btn nav" title="Caixa à esquerda" disabled={!alvoSetas(-1)} onClick={() => andar(-1)}>◀</button>
             <button className="btn nav" title="Andar de cima (na prateleira)" disabled={!alvoVertical('cima')} onClick={() => subir('cima')}>▲</button>
@@ -227,8 +228,14 @@ export default function App() {
           <img src={verEtiqueta && fotoEtiquetaSrc(sel) ? fotoEtiquetaSrc(sel) : fotoSrc(sel)} alt={sel.nome} />
         </div>
       )}
+      <div className="legenda" aria-label="Legenda das cores">
+        <span><i style={{ background: CORES.ok }} />Certo</span>
+        <span><i style={{ background: CORES.duvida }} />Dúvida</span>
+        <span><i style={{ background: CORES.erro }} />Erro</span>
+        <span><i style={{ background: CORES.normal }} />Não conferido</span>
+      </div>
       <footer>
-        <span className="uso">Setas do teclado: ir ao endereço vizinho · Esc: voltar · clique numa caixa para ver a peça · vermelho: peça com observação</span>
+        <span className="uso">Setas do teclado: ir ao endereço vizinho · Esc: voltar · clique numa caixa para ver a peça</span>
         <span className="creditos">Criado por Fábio Sarri e Eviton Capistrano</span>
       </footer>
     </div>

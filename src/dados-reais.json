@@ -232,7 +232,8 @@
   "qtd": "9 pç(s)",
   "fotoEtiqueta": "etiqueta-01-01-01-A.jpg",
   "tipo": "prateleira",
-  "ordem": 4
+  "ordem": 4,
+  "status": "ok"
  },
  {
   "posto": 1,
@@ -244,7 +245,8 @@
   "obs": "Sem endereço na prateleira. Dois modelos diferentes de peça na mesma caixa. Colocaram a caixa em um inventário; peça nunca usada.",
   "tipo": "prateleira",
   "ordem": 4,
-  "foto": "soleira-01-01-02-A.jpg"
+  "foto": "soleira-01-01-02-A.jpg",
+  "status": "erro"
  },
  {
   "posto": 1,
@@ -258,7 +260,8 @@
   "qtd": "14 pç(s)",
   "fotoEtiqueta": "etiqueta-01-01-03-A.jpg",
   "tipo": "prateleira",
-  "ordem": 4
+  "ordem": 4,
+  "status": "ok"
  },
  {
   "posto": 1,
@@ -273,7 +276,8 @@
   "qtd": "6 pç(s)",
   "fotoEtiqueta": "etiqueta-01-01-06-A.jpg",
   "tipo": "rack",
-  "ordem": 3
+  "ordem": 3,
+  "status": "ok"
  },
  {
   "posto": 1,
@@ -289,7 +293,8 @@
   "fotoEtiqueta": "etiqueta-01-01-07-A.jpg",
   "obs": "Peça correta na posição; caixa posicionada um pouco ao lado.",
   "tipo": "rack",
-  "ordem": 6
+  "ordem": 6,
+  "status": "duvida"
  },
  {
   "posto": 1,
@@ -305,7 +310,8 @@
   "obs": "Sem endereço na caixa e no chão. Peça correta na caixa.",
   "semEndereco": true,
   "tipo": "rack",
-  "ordem": 5
+  "ordem": 5,
+  "status": "erro"
  },
  {
   "posto": 1,
@@ -320,7 +326,8 @@
   "fotoEtiqueta": "etiqueta-01-01-01-B.jpg",
   "obs": "Aparentemente peça correta no lugar.",
   "tipo": "prateleira",
-  "ordem": 4
+  "ordem": 4,
+  "status": "duvida"
  },
  {
   "posto": 1,
@@ -334,7 +341,8 @@
   "qtd": "60 pç(s)",
   "fotoEtiqueta": "etiqueta-01-01-02-B.jpg",
   "tipo": "prateleira",
-  "ordem": 4
+  "ordem": 4,
+  "status": "ok"
  },
  {
   "posto": 1,
@@ -348,7 +356,8 @@
   "qtd": "25 pç(s)",
   "fotoEtiqueta": "etiqueta-01-01-03-B.jpg",
   "tipo": "prateleira",
-  "ordem": 4
+  "ordem": 4,
+  "status": "ok"
  },
  {
   "posto": 1,
@@ -362,7 +371,8 @@
   "qtd": "1200 pç(s)",
   "fotoEtiqueta": "etiqueta-01-01-04-B.jpg",
   "tipo": "prateleira",
-  "ordem": 4
+  "ordem": 4,
+  "status": "ok"
  },
  {
   "posto": 1,
@@ -377,7 +387,8 @@
   "qtd": "3250 pç(s)",
   "fotoEtiqueta": "etiqueta-01-01-05-B.jpg",
   "tipo": "prateleira",
-  "ordem": 4
+  "ordem": 4,
+  "status": "ok"
  },
  {
   "posto": 1,
@@ -391,7 +402,8 @@
   "qtd": "6000 pç(s)",
   "fotoEtiqueta": "etiqueta-01-01-01-C.jpg",
   "tipo": "prateleira",
-  "ordem": 4
+  "ordem": 4,
+  "status": "ok"
  },
  {
   "posto": 1,
@@ -405,7 +417,8 @@
   "qtd": "30 pç(s)",
   "fotoEtiqueta": "etiqueta-01-01-02-C.jpg",
   "tipo": "prateleira",
-  "ordem": 4
+  "ordem": 4,
+  "status": "ok"
  },
  {
   "posto": 1,
@@ -419,7 +432,8 @@
   "qtd": "40 pç(s)",
   "fotoEtiqueta": "etiqueta-01-01-03-C.jpg",
   "tipo": "prateleira",
-  "ordem": 4
+  "ordem": 4,
+  "status": "ok"
  },
  {
   "posto": 1,
@@ -434,7 +448,8 @@
   "fotoEtiqueta": "etiqueta-01-01-04-C.jpg",
   "obs": "Peça sem numeração marcada, aparentemente a correta.",
   "tipo": "prateleira",
-  "ordem": 4
+  "ordem": 4,
+  "status": "duvida"
  },
  {
   "posto": 1,
@@ -448,7 +463,8 @@
   "qtd": "50 pç(s)",
   "fotoEtiqueta": "etiqueta-01-01-05-C.jpg",
   "tipo": "prateleira",
-  "ordem": 4
+  "ordem": 4,
+  "status": "ok"
  },
  {
   "posto": 1,
@@ -462,7 +478,8 @@
   "qtd": "750 pç(s)",
   "fotoEtiqueta": "etiqueta-01-01-01-D.jpg",
   "tipo": "prateleira",
-  "ordem": 4
+  "ordem": 4,
+  "status": "ok"
  },
  {
   "posto": 1,
@@ -476,7 +493,8 @@
   "qtd": "18 pç(s)",
   "fotoEtiqueta": "etiqueta-01-01-02-D.jpg",
   "tipo": "prateleira",
-  "ordem": 4
+  "ordem": 4,
+  "status": "ok"
  },
  {
   "posto": 1,
@@ -490,7 +508,8 @@
   "qtd": "18 pç(s)",
   "fotoEtiqueta": "etiqueta-01-01-03-D.jpg",
   "tipo": "prateleira",
-  "ordem": 4
+  "ordem": 4,
+  "status": "ok"
  },
  {
   "posto": 1,
@@ -504,7 +523,8 @@
   "qtd": "25 pç(s)",
   "fotoEtiqueta": "etiqueta-01-01-04-D.jpg",
   "tipo": "prateleira",
-  "ordem": 4
+  "ordem": 4,
+  "status": "ok"
  },
  {
   "posto": 2,
@@ -517,7 +537,8 @@
   "tipo": "rack",
   "local": 1,
   "ordem": 1,
-  "foto": "prateleira-02-06-04-A.jpg"
+  "foto": "prateleira-02-06-04-A.jpg",
+  "status": "erro"
  },
  {
   "posto": 2,
@@ -530,6 +551,7 @@
   "tipo": "rack",
   "local": 1,
   "ordem": 2,
-  "foto": "caixa-02-06-05-A.jpg"
+  "foto": "caixa-02-06-05-A.jpg",
+  "status": "erro"
  }
 ]
