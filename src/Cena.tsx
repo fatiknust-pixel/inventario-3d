@@ -331,10 +331,13 @@ export default function Cena({ itens, selecionado, foco, achados, onSel, onFoco,
     const novoPreset = preset && preset.n !== presetVisto.current ? preset : null
     if (preset) presetVisto.current = preset.n
     if (p) {
-      // em tela em pé o painel cobre a parte de baixo: abaixa o alvo para a prateleira aparecer mais acima
-      v.alvo.copy(R(new THREE.Vector3(p.x, p.h / 2 + 0.25 - (paisagem ? 0 : 0.75), p.z)))
-      const d = Math.max(3.2, p.h * 1.7) * afasta(0.7)
-      v.off = R(new THREE.Vector3(0, 0.7 * afasta(0.7), p.frente * d))
+      // distância para a prateleira inteira caber na largura e na altura da tela
+      const tanV = Math.tan((45 / 2) * Math.PI / 180)
+      const d = Math.max(3, (p.w / 2 + 0.4) / (tanV * asp), (p.h / 2 + 0.6) / tanV)
+      // no celular o painel cobre a parte de baixo: sobe a prateleira na tela
+      const baixa = paisagem ? 0 : d * tanV * 0.3
+      v.alvo.copy(R(new THREE.Vector3(p.x, p.h / 2 + 0.25 - baixa, p.z)))
+      v.off = R(new THREE.Vector3(0, 0.5, p.frente * d))
     } else if (selecionado) {
       const g = geometriaItem(selecionado, lay)
       v.alvo.copy(R(g.pos))
@@ -343,14 +346,15 @@ export default function Cena({ itens, selecionado, foco, achados, onSel, onFoco,
     } else if (novoPreset && novoPreset.c != null && lay.linhas.get(novoPreset.c)) {
       const l = lay.linhas.get(novoPreset.c)!
       v.alvo.copy(R(new THREE.Vector3(l.largura / 2, 0.5, l.z)))
-      v.off = R(new THREE.Vector3(0, 7.5 * afasta(0.95), l.frente * 8.5 * afasta(0.95)))
+      v.off = R(new THREE.Vector3(0, 7.5 * afasta(0.8), l.frente * 8.5 * afasta(0.8)))
     } else {
       v.alvo.copy(R(centro))
       // distância para caber o mapa inteiro (eixo longo = pares, eixo curto = comprimento dos corredores)
       const t = 0.828
       const longo = lay.pares * PITCH, curto = lay.xMax + 6
       const dist = 1.15 * Math.max(longo / (t * (paisagem ? asp : 1)), curto / (t * (paisagem ? 1 : asp)))
-      v.off = new THREE.Vector3(0, dist * 0.85, dist * 0.5)
+      // celular em pé: visão quase de cima, corredores na horizontal e empilhados; tela larga: visão inclinada
+      v.off = paisagem ? new THREE.Vector3(0, dist * 0.9, dist * 0.4) : new THREE.Vector3(0, dist, dist * 0.14)
     }
     v.n = 90
   }
@@ -359,22 +363,32 @@ export default function Cena({ itens, selecionado, foco, achados, onSel, onFoco,
   const frames: JSX.Element[] = []
   for (const [c, l] of lay.linhas) {
     for (const b of l.blocos) {
-      if (b.tipo === 'rack') frames.push(<Rack key={`${c}-${b.posto}-${b.posicao}`} x={b.x} z={l.z} frente={l.frente} ghost={l.vazio} />)
+      if (b.tipo === 'rack') { if (!l.vazio) frames.push(<Rack key={`${c}-${b.posto}-${b.posicao}`} x={b.x} z={l.z} frente={l.frente} />) }
       else if (b.tipo === 'prat') {
         const p = lay.prat.get(b.id)!
         frames.push(<Prateleira key={`p${b.id}`} p={p} focada={foco === b.id} onFoco={onFoco} />)
-        if (foco == null || (foco === b.id && paisagem))
+        // o nome da prateleira só aparece quando ela está em zoom e a tela é larga (no celular o painel já diz qual é)
+        if (foco === b.id && paisagem)
           frames.push(
-            <Html key={`pl${b.id}`} position={[p.x, p.h + 0.25, p.z]} center>
+            <Html key={`pl${b.id}`} position={[p.x, p.h + 0.25, p.z]} center zIndexRange={[1, 0]}>
               <div className="rotulo">{nomePrat(p)}</div>
             </Html>,
           )
       }
     }
+    // corredor sem endereços: uma laje translúcida única, em vez de oito racks fantasmas
+    if (l.vazio)
+      frames.push(
+        <mesh key={`v${c}`} position={[l.xFim / 2, 0.2, l.z]}>
+          <boxGeometry args={[l.xFim, 0.4, DEPTH * 0.9]} />
+          <meshStandardMaterial color="#6b7686" transparent opacity={0.16} depthWrite={false} />
+        </mesh>,
+      )
+    // só o número do corredor, pequeno, no início da fila; some quando há zoom em algo
     if (foco == null && !selecionado)
       frames.push(
-        <Html key={`l${c}`} position={[-1.2, 1.6, l.z]} center>
-          <div className={`rotulo${l.vazio ? ' vazio' : ''}`}>Corredor {c}</div>
+        <Html key={`l${c}`} position={[-0.9, 0.9, l.z]} center zIndexRange={[1, 0]}>
+          <div className={`rotulo mini${l.vazio ? ' vazio' : ''}`}>{c}</div>
         </Html>,
       )
   }
@@ -387,18 +401,18 @@ export default function Cena({ itens, selecionado, foco, achados, onSel, onFoco,
       <group rotation={[0, ang, 0]}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[comprimento / 2 - 1, 0, -((lay.pares - 1) * PITCH) / 2]}>
         <planeGeometry args={[comprimento + 4, lay.pares * PITCH + 4]} />
-        <meshStandardMaterial color="#2b323b" />
+        <meshStandardMaterial color="#1b222b" />
       </mesh>
       {Array.from({ length: lay.pares + 1 }, (_, k) => (
         <mesh key={`log${k}`} rotation={[-Math.PI / 2, 0, 0]} position={[comprimento / 2 - 1, 0.01, PITCH / 2 - k * PITCH]}>
           <planeGeometry args={[comprimento, LOGISTICO]} />
-          <meshStandardMaterial color="#6e5a1e" />
+          <meshStandardMaterial color="#3b3521" />
         </mesh>
       ))}
       {lay.passagens.map((z, k) => (
         <mesh key={`pas${k}`} rotation={[-Math.PI / 2, 0, 0]} position={[comprimento / 2 - 1, 0.01, z]}>
           <planeGeometry args={[comprimento, PASSAGEM]} />
-          <meshStandardMaterial color="#35503a" />
+          <meshStandardMaterial color="#25382c" />
         </mesh>
       ))}
       {frames}
