@@ -237,8 +237,9 @@ function Prateleira({ p, focada, onFoco }: { p: Prat; focada: boolean; onFoco: (
   )
 }
 
-type Estado = 'normal' | 'obs' | 'achado' | 'selecionado' | 'apagado'
-const CORES: Record<Estado, string> = { normal: '#c9a26b', obs: '#c4684f', achado: '#4cd964', selecionado: '#ff8a00', apagado: '#4a4f57' }
+type Estado = 'normal' | 'ok' | 'duvida' | 'erro' | 'achado' | 'selecionado' | 'apagado'
+// verde = certo, amarelo = dúvida, vermelho = erro; marrom = ainda não conferido; azul = resultado da busca
+export const CORES: Record<Estado, string> = { normal: '#c9a26b', ok: '#3fae5a', duvida: '#e6c229', erro: '#d64545', achado: '#35b6ff', selecionado: '#ff8a00', apagado: '#4a4f57' }
 
 function Caixa({ item, lay, estado, onSel, onHover }: { item: Item; lay: LayoutInfo; estado: Estado; onSel: (i: Item) => void; onHover: (i: Item | null) => void }) {
   const { pos, size } = geometriaItem(item, lay)
@@ -250,7 +251,7 @@ function Caixa({ item, lay, estado, onSel, onHover }: { item: Item; lay: LayoutI
       onPointerOut={() => { document.body.style.cursor = 'auto'; onHover(null) }}
     >
       <boxGeometry args={size} />
-      <meshStandardMaterial color={CORES[estado]} emissive={estado === 'selecionado' ? '#ff8a00' : estado === 'achado' ? '#1f6b2b' : '#000'} />
+      <meshStandardMaterial color={CORES[estado]} emissive={estado === 'selecionado' ? '#ff8a00' : estado === 'achado' ? '#0b4d73' : '#000'} />
     </mesh>
   )
 }
@@ -384,7 +385,7 @@ export default function Cena({ itens, selecionado, foco, achados, onSel, onFoco,
       ))}
       {frames}
       {itens.map((it, i) => {
-        const estado: Estado = it === selecionado ? 'selecionado' : achados ? (achados.has(it) ? 'achado' : 'apagado') : it.obs ? 'obs' : 'normal'
+        const estado: Estado = it === selecionado ? 'selecionado' : achados ? (achados.has(it) ? 'achado' : 'apagado') : it.status ?? 'normal'
         return <Caixa key={i} item={it} lay={lay} estado={estado} onSel={onSel} onHover={setHover} />
       })}
       {hover && hover !== selecionado && (() => {
