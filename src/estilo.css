@@ -1,87 +1,123 @@
+:root {
+  --bg: #10151c;
+  --painel: #171f29;
+  --painel-t: #171f29ee;
+  --linha: #2c3948;
+  --txt: #e6edf5;
+  --suave: #8fa3b8;
+  --acento: #ff8a00;
+  --azul: #5a93e0;
+  --ok: #3fae5a;
+  --duv: #e6c229;
+  --err: #d64545;
+  --gut: 10px;
+}
 * { box-sizing: border-box }
-html, body, #root { margin: 0; height: 100%; height: 100dvh; overscroll-behavior: none; background: #10151c; color: #e6edf5; font-family: system-ui, sans-serif }
-.app { position: relative; height: 100% }
+html, body, #root { margin: 0; height: 100%; height: 100dvh; overscroll-behavior: none; background: var(--bg); color: var(--txt); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent }
+.app { position: relative; height: 100%; overflow: hidden }
 .app canvas { position: absolute; inset: 0 }
-header { position: absolute; z-index: 3; top: 0; left: 0; right: 0; display: flex; gap: 8px; align-items: center; padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left)); background: #10151ccc; backdrop-filter: blur(6px); flex-wrap: wrap }
-header input { flex: 1; min-width: 160px; padding: 8px 10px; border-radius: 8px; border: 1px solid #3a4655; background: #1a222c; color: inherit }
-.btn { padding: 8px 12px; border-radius: 8px; border: 1px solid #3a4655; background: #243042; color: inherit; cursor: pointer; font-size: 14px }
-.erro { position: absolute; z-index: 3; top: 56px; left: 12px; right: 12px; background: #7a2230; padding: 8px 12px; border-radius: 8px }
-.lista { position: absolute; z-index: 2; top: 56px; left: 12px; margin: 0; padding: 4px; list-style: none; background: #1a222cf0; border-radius: 10px; max-width: 420px; font-size: 14px }
-.lista li { padding: 8px 10px; cursor: pointer; border-radius: 6px }
-.lista li:hover { background: #2a3646 }
-.painel { position: absolute; z-index: 2; right: 12px; top: 64px; width: 320px; max-width: calc(100% - 24px); background: #1a222cf2; border: 1px solid #33414f; border-radius: 14px; padding: 14px; display: grid; gap: 4px }
-.painel img { width: 100%; border-radius: 10px; background: #2a3340; aspect-ratio: 320/220; object-fit: cover }
-.painel .x { position: absolute; top: 6px; right: 10px; background: #0008; border: 0; color: #fff; font-size: 22px; cursor: pointer; border-radius: 8px }
-.end { font-size: 26px; font-weight: 700; color: #ff8a00; margin-top: 6px; letter-spacing: 1px }
-.sub { font-size: 12px; color: #8fa3b8 }
-.painel h2 { margin: 6px 0 0; font-size: 18px }
-.cod { font-family: ui-monospace, monospace; color: #9ccfff }
-footer { position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 4px 16px; padding: 6px max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); font-size: 12px; color: #8fa3b8; text-shadow: 0 1px 3px #000; pointer-events: none }
-.creditos { margin-left: auto; color: #b8c7d8 }
-.rotulo { background: #1a222ce0; border: 1px solid #3a4655; border-radius: 8px; padding: 4px 10px; font-weight: 700; white-space: nowrap; color: #fff }
-.rotulo small { display: block; font-weight: 400; color: #8fa3b8; font-size: 11px }
-@media (max-width: 640px) { .painel { top: auto; bottom: 28px; right: 12px; left: 12px; width: auto; grid-template-columns: 110px 1fr; } .painel img { grid-row: span 5 } }
 
-.sair { position: absolute; z-index: 2; left: 12px; top: 56px }
-.lista { top: 100px }
-
-.atalhos { position: absolute; z-index: 2; top: 56px; left: 12px; right: 12px; display: flex; gap: 6px; flex-wrap: wrap }
-.chip { padding: 6px 12px; border-radius: 999px; border: 1px solid #3a4655; background: #1a222ce6; color: inherit; cursor: pointer; font-size: 13px }
-.chip:hover, .chip.on { background: #2f4a6e; border-color: #5a93e0 }
-.sair { display: none }
-.lista { top: 100px }
-.dica { background: #0b0f14ee; border: 1px solid #3a4655; border-radius: 8px; padding: 4px 8px; white-space: nowrap; display: grid; gap: 1px; font-size: 12px; color: #fff }
-.dica b { color: #ff8a00; font-size: 13px }
-.painel .foto { cursor: zoom-in }
-.acoes { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap }
-.btn.nav { padding: 8px 12px; min-width: 40px }
+/* ---------- barra de cima: busca + atalhos ---------- */
+.topo { position: absolute; z-index: 4; top: 0; left: 0; right: 0; display: grid; gap: 6px; pointer-events: none;
+  padding: max(8px, env(safe-area-inset-top)) max(var(--gut), env(safe-area-inset-right)) 0 max(var(--gut), env(safe-area-inset-left)) }
+.topo > * { pointer-events: auto }
+header { display: flex; gap: 8px; align-items: center }
+header b { font-size: 15px; white-space: nowrap; text-shadow: 0 1px 4px #000 }
+.busca { flex: 1; min-width: 0; max-width: 560px; height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--linha); background: var(--painel-t); color: inherit; font-size: 15px; backdrop-filter: blur(6px) }
+.busca:focus { outline: 2px solid var(--azul); outline-offset: 0 }
+.btn { height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--linha); background: #232f3f; color: inherit; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap }
+.btn:hover:not(:disabled) { background: #2b3a4e }
 .btn:disabled { opacity: .35; cursor: default }
-.lightbox { position: absolute; z-index: 5; inset: 0; background: #000d; display: grid; place-items: center; padding: 16px; cursor: zoom-out }
-.lightbox img { max-width: 100%; max-height: 100%; border-radius: 10px }
-@media (max-width: 640px) { .painel { grid-template-columns: 1fr } .painel .foto { grid-row: auto } header input { min-width: 120px } }
-
-.miniatura { background: none; border: 0; color: #7fb4ff; cursor: pointer; text-align: left; padding: 0; font-size: 12px }
-
+header .btn { height: 40px; background: var(--painel-t); backdrop-filter: blur(6px) }
 .menu { position: relative }
 .menu summary { list-style: none; user-select: none }
 .menu summary::-webkit-details-marker { display: none }
-.menu-itens { position: absolute; right: 0; top: calc(100% + 6px); z-index: 6; display: grid; gap: 6px; padding: 8px; min-width: 190px; background: #1a222cf8; border: 1px solid #3a4655; border-radius: 12px }
-.menu-itens .btn { text-align: left }
-.atalhos { top: calc(56px + env(safe-area-inset-top)) }
-.painel, .lista, .erro, .sair { }
-@media (pointer: coarse) { .btn, .chip { min-height: 44px; display: inline-flex; align-items: center } .btn.nav { min-width: 48px; justify-content: center } }
+.menu-itens { position: absolute; right: 0; top: calc(100% + 6px); z-index: 6; display: grid; gap: 6px; padding: 8px; min-width: 190px; background: var(--painel); border: 1px solid var(--linha); border-radius: 12px; box-shadow: 0 8px 24px #0009 }
+.menu-itens .btn { justify-content: flex-start; background: #232f3f }
+
+.atalhos { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px }
+.atalhos::-webkit-scrollbar { display: none }
+.chip { flex: 0 0 auto; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--linha); background: var(--painel-t); color: inherit; cursor: pointer; font-size: 13px; backdrop-filter: blur(6px) }
+.chip:hover { background: #2b3a4e }
+.chip.on { background: #2f4a6e; border-color: var(--azul) }
+.chip .sm { display: none }
+
+.lista { position: absolute; z-index: 5; left: max(var(--gut), env(safe-area-inset-left)); right: max(var(--gut), env(safe-area-inset-right)); top: calc(max(8px, env(safe-area-inset-top)) + 46px);
+  max-width: 560px; max-height: 45dvh; overflow-y: auto; margin: 0; padding: 4px; list-style: none; background: var(--painel); border: 1px solid var(--linha); border-radius: 12px; box-shadow: 0 10px 30px #000b; font-size: 14px }
+.lista li { padding: 9px 10px; cursor: pointer; border-radius: 8px; display: grid; gap: 1px }
+.lista li small { color: var(--suave); font-size: 12px }
+.lista li:hover, .lista li:active { background: #2a3646 }
+.lista li.mais { color: var(--suave); cursor: default }
+
+.erro { position: absolute; z-index: 6; top: 96px; left: var(--gut); right: var(--gut); background: #7a2230; padding: 8px 12px; border-radius: 8px }
+
+/* ---------- painel da peça / da prateleira ---------- */
+.painel { position: absolute; z-index: 3; right: var(--gut); top: 100px; width: 320px; max-height: calc(100dvh - 150px); overflow-y: auto;
+  background: var(--painel-t); border: 1px solid var(--linha); border-radius: 14px; padding: 12px; display: grid; gap: 4px; backdrop-filter: blur(8px) }
+.painel .x { position: absolute; top: 6px; right: 8px; z-index: 1; width: 32px; height: 32px; background: #000a; border: 0; color: #fff; font-size: 20px; line-height: 1; cursor: pointer; border-radius: 8px }
+.painel .foto { width: 100%; height: 200px; object-fit: contain; background: #0b0f14; border-radius: 10px; cursor: zoom-in }
+.miniatura { background: none; border: 0; color: #7fb4ff; cursor: pointer; text-align: left; padding: 0; font-size: 12px; width: fit-content }
+.end { font-size: 24px; font-weight: 700; color: var(--acento); margin-top: 4px; letter-spacing: 1px }
+.sub { font-size: 12px; color: var(--suave) }
+.painel h2 { margin: 4px 0 0; font-size: 17px; line-height: 1.25 }
+.cod { font-family: ui-monospace, monospace; color: #9ccfff; font-size: 14px }
+.cor { color: var(--suave) }
+.painel .dado { font-size: 13px; color: #c7d3df }
+.situacao { display: inline-block; width: fit-content; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; color: #10151c }
+.situacao.st-ok { background: var(--ok) }
+.situacao.st-duvida { background: var(--duv) }
+.situacao.st-erro { background: var(--err); color: #fff }
+.obs { margin-top: 2px; padding: 6px 8px; border-radius: 8px; background: #3a2420; border: 1px solid #7a3b30; color: #ffd9cf; font-size: 13px; line-height: 1.35 }
+.obs.st-duvida { background: #3a3414; border-color: #8a7a1f; color: #fff1a8 }
+.obs.st-ok { background: #16301c; border-color: #2f7a43; color: #c9f2d3 }
+.acoes { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap }
+.btn.nav { min-width: 44px; justify-content: center; padding: 0 10px }
+.lightbox { position: absolute; z-index: 8; inset: 0; background: #000d; display: grid; place-items: center; padding: 16px; cursor: zoom-out }
+.lightbox img { max-width: 100%; max-height: 100%; border-radius: 10px }
+
+/* ---------- legenda e rodapé ---------- */
+.legenda { position: absolute; z-index: 2; left: max(var(--gut), env(safe-area-inset-left)); bottom: calc(30px + env(safe-area-inset-bottom)); display: flex; gap: 4px 12px; flex-wrap: wrap; padding: 6px 10px; border-radius: 10px; background: #10151cd9; border: 1px solid #243040; font-size: 12px; pointer-events: none }
+.legenda span { display: inline-flex; align-items: center; gap: 6px }
+.legenda i { width: 11px; height: 11px; border-radius: 3px; display: inline-block }
+footer { position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; align-items: flex-end; gap: 4px 16px;
+  padding: 6px max(var(--gut), env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(var(--gut), env(safe-area-inset-left)); font-size: 12px; color: var(--suave); text-shadow: 0 1px 3px #000; pointer-events: none }
+.creditos { margin-left: auto; color: #b8c7d8 }
+
+/* ---------- rótulos e dicas dentro do 3D ---------- */
+.rotulo { background: #1a222ce0; border: 1px solid #3a4655; border-radius: 8px; padding: 3px 9px; font-weight: 700; white-space: nowrap; color: #fff; font-size: 13px; pointer-events: none }
+.rotulo.mini { padding: 1px 8px; border-radius: 999px; font-size: 12px }
+.rotulo.vazio { opacity: .55; border-style: dashed; font-weight: 600 }
+.dica { background: #0b0f14ee; border: 1px solid #3a4655; border-radius: 8px; padding: 4px 8px; white-space: nowrap; display: grid; gap: 1px; font-size: 12px; color: #fff }
+.dica b { color: var(--acento); font-size: 13px }
+
+@media (pointer: coarse) { .btn { height: 40px } .btn.nav { min-width: 48px } .chip { height: 34px } }
+
+/* ---------- celular ---------- */
 @media (max-width: 640px) {
   header b { display: none }
-  .atalhos { top: calc(66px + env(safe-area-inset-top)) }
-  .lista { top: calc(112px + env(safe-area-inset-top)) }
-  header input { flex: 1 1 0; min-width: 0 }
-  .atalhos { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none }
-  .atalhos::-webkit-scrollbar { display: none }
-  .chip { flex: 0 0 auto }
-  .lista { left: 12px; right: 12px; max-width: none }
+  .chip .lg { display: none }
+  .chip .sm { display: inline }
+  .chip { padding: 0 11px }
+
+  /* a folha de baixo mostra a peça; some o que atrapalha */
+  .painel { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 48dvh; border-radius: 16px 16px 0 0; border-bottom: 0; padding: 12px var(--gut) max(12px, env(safe-area-inset-bottom));
+    grid-template-columns: 92px 1fr; column-gap: 12px; align-items: start }
+  .painel > * { grid-column: 2 }
+  .painel .x { top: 8px; right: 10px }
+  .painel .foto { grid-column: 1; grid-row: 1 / span 3; height: 92px }
+  .miniatura { grid-column: 1; grid-row: 4; font-size: 11px }
+  .painel .acoes, .painel .obs { grid-column: 1 / -1 }
+  .end { font-size: 21px; margin-top: 0; padding-right: 38px }
+  .painel h2 { font-size: 15px; margin-top: 2px }
+  .painel.simples { grid-template-columns: 1fr }
+  .painel.simples > * { grid-column: 1 }
+  .painel.simples .acoes { margin-top: 4px }
+
+  /* legenda em uma linha só, e só quando não há painel aberto */
+  .legenda { left: 50%; transform: translateX(-50%); bottom: calc(28px + env(safe-area-inset-bottom)); gap: 2px 10px; padding: 4px 10px; font-size: 11px; width: max-content; max-width: calc(100% - 20px) }
+  .legenda i { width: 9px; height: 9px }
   .uso { display: none }
-  .painel { left: 0; right: 0; bottom: 0; top: auto; width: auto; max-width: none; max-height: 52dvh; overflow-y: auto; border-radius: 16px 16px 0 0; padding: 12px 14px max(14px, env(safe-area-inset-bottom)); grid-template-columns: 118px 1fr; column-gap: 12px; align-items: start }
-  .painel > :not(.foto):not(.acoes):not(.x) { grid-column: 2 }
-  .painel .foto { grid-column: 1; grid-row: 1 / span 5; aspect-ratio: 1 / 1 }
-  .painel .acoes { grid-column: 1 / -1 }
-  .painel .end { font-size: 22px; margin-top: 0 }
-  .painel h2 { font-size: 16px }
-  .x { top: 8px; right: 10px }
+  .creditos { margin: 0 auto; font-size: 11px }
+  .comPainel .legenda, .comPainel footer { display: none }
+  .lista { max-height: 50dvh }
 }
-
-.painel img.foto { object-fit: contain; aspect-ratio: auto; height: 220px; background: #0b0f14 }
-.painel .cor { color: #8fa3b8; font-size: 13px }
-.painel .obs { margin-top: 4px; padding: 6px 8px; border-radius: 8px; background: #3a2420; border: 1px solid #7a3b30; color: #ffd9cf; font-size: 13px }
-.rotulo.vazio { opacity: .75; border-style: dashed }
-@media (max-width: 640px) { .painel img.foto { height: 118px; aspect-ratio: auto } }
-
-.legenda { position: absolute; z-index: 2; left: 12px; bottom: 34px; display: flex; gap: 6px 12px; flex-wrap: wrap; padding: 6px 10px; border-radius: 10px; background: #10151ce6; border: 1px solid #2a3340; font-size: 12px; pointer-events: none }
-.legenda span { display: inline-flex; align-items: center; gap: 6px }
-.legenda i { width: 12px; height: 12px; border-radius: 3px; display: inline-block }
-.painel .obs.st-duvida { background: #3a3414; border-color: #8a7a1f; color: #fff1a8 }
-.painel .obs.st-ok { background: #16301c; border-color: #2f7a43; color: #c9f2d3 }
-.situacao { display: inline-block; width: fit-content; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; color: #10151c }
-.situacao.st-ok { background: #3fae5a }
-.situacao.st-duvida { background: #e6c229 }
-.situacao.st-erro { background: #d64545; color: #fff }
-@media (max-width: 640px) { .legenda { bottom: auto; top: calc(122px + env(safe-area-inset-top)); left: 12px; right: 12px; justify-content: space-between; gap: 4px 8px; padding: 4px 8px } }

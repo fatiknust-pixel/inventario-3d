@@ -13,6 +13,8 @@ export default function App() {
   const [copiado, setCopiado] = useState(false)
   const [verEtiqueta, setVerEtiqueta] = useState(false)
   const arquivo = useRef<HTMLInputElement>(null)
+  const campoBusca = useRef<HTMLInputElement>(null)
+  const [buscando, setBuscando] = useState(false) // a lista de resultados só aparece com o cursor na busca
 
   useEffect(() => setVerEtiqueta(false), [sel])
 
@@ -146,10 +148,17 @@ export default function App() {
   const pad = (n: number) => String(n).padStart(2, '0')
 
   return (
-    <div className="app">
+    <div className={`app${sel || foco != null ? ' comPainel' : ''}`}>
+      <div className="topo">
       <header>
         <b>Inventário 3D</b>
         <input
+          ref={campoBusca}
+          className="busca"
+          type="search"
+          enterKeyHint="search"
+          onFocus={() => setBuscando(true)}
+          onBlur={() => setBuscando(false)}
           placeholder="Buscar peça, código ou endereço…"
           value={busca}
           onChange={e => setBusca(e.target.value)}
@@ -171,22 +180,26 @@ export default function App() {
       </header>
       <nav className="atalhos">
         <button className="chip" onClick={() => irPara(null)}>Visão geral</button>
-        {[...lay.linhas.keys()].sort((a, b) => a - b).map(c => <button key={c} className="chip" onClick={() => irPara(c)}>Corredor {pad(c)}</button>)}
-        {[...lay.prat.values()].map(p => <button key={p.id} className={`chip${foco === p.id ? ' on' : ''}`} onClick={() => irPrateleira(p.id)}>{nomePrat(p)}</button>)}
+        {[...lay.linhas.keys()].sort((a, b) => a - b).map(c => <button key={c} className="chip" onClick={() => irPara(c)}><span className="lg">Corredor </span>{pad(c)}</button>)}
+        {[...lay.prat.values()].map(p => <button key={p.id} className={`chip${foco === p.id ? ' on' : ''}`} onClick={() => irPrateleira(p.id)}><span className="lg">Prateleira </span><span className="sm">Prat. </span>{pad(p.posto)} {pad(p.corredor)}</button>)}
       </nav>
+      </div>
       {erro && <div className="erro">{erro}</div>}
       <Cena itens={itens} selecionado={sel} foco={foco} achados={achados} preset={preset} onSel={clicarItem} onFoco={id => { setFoco(id); setSel(null) }} onFundo={fundo} />
-      {achados && !sel && (
-        <ul className="lista">
+      {achados && !sel && buscando && (
+        <ul className="lista" onPointerDown={e => e.preventDefault()}>
           {[...achados].slice(0, 8).map((i, k) => (
-            <li key={k} onClick={() => escolher(i)}><b>{endereco(i)}</b> {i.codigo} — {i.nome}</li>
+            <li key={k} onClick={() => { escolher(i); campoBusca.current?.blur() }}>
+              <span><b>{endereco(i)}</b> · {i.nome || '(vazio)'}</span>
+              <small>{i.codigo}</small>
+            </li>
           ))}
-          {achados.size === 0 && <li>Nada encontrado</li>}
-          {achados.size > 8 && <li>+{achados.size - 8} resultados…</li>}
+          {achados.size === 0 && <li className="mais">Nada encontrado</li>}
+          {achados.size > 8 && <li className="mais">+{achados.size - 8} resultados…</li>}
         </ul>
       )}
       {foco != null && !sel && (
-        <aside className="painel">
+        <aside className="painel simples">
           <div className="end">{pf ? nomePrat(pf) : 'Prateleira'}</div>
           <div className="sub">{caixasFoco.length} caixas cadastradas · andares A (baixo) a {String.fromCharCode(64 + (pf?.niveis ?? 3))} (alto)</div>
           <h2>Toque na caixa que você quer ver</h2>
@@ -208,9 +221,9 @@ export default function App() {
           <div className="sub">{sel.semEndereco ? `caixa no chão, sem endereço · perto do corredor ${pad(linhaDe(sel))}` : `posto ${sel.posto} · corredor ${sel.corredor} · posição ${sel.posicao} · altura ${sel.altura}`}{sel.local && sel.local !== sel.corredor && ` · fica fisicamente no corredor ${pad(sel.local)}`}</div>
           <h2>{sel.nome || '(vazio)'}</h2>
           <div className="cod">{sel.codigo}{sel.cor && <span className="cor"> · cor {sel.cor}</span>}</div>
-          {sel.lofo && <div>Lofo: {sel.lofo}</div>}
-          {sel.embalagem && <div>Emb.: {sel.embalagem}</div>}
-          {sel.qtd && <div>Quant./Embal.: {sel.qtd}</div>}
+          {sel.lofo && <div className="dado">Lofo: {sel.lofo}</div>}
+          {sel.embalagem && <div className="dado">Emb.: {sel.embalagem}</div>}
+          {sel.qtd && <div className="dado">Quant./Embal.: {sel.qtd}</div>}
           {sel.status && <div className={`situacao st-${sel.status}`}>{sel.status === 'ok' ? 'Certo' : sel.status === 'duvida' ? 'Dúvida' : 'Erro'}</div>}
           {sel.obs && <div className={`obs${sel.status ? ` st-${sel.status}` : ''}`}><b>Observação:</b> {sel.obs}</div>}
           <div className="acoes">
