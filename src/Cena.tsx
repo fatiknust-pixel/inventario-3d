@@ -239,20 +239,38 @@ function Prateleira({ p, focada, onFoco }: { p: Prat; focada: boolean; onFoco: (
 
 type Estado = 'normal' | 'ok' | 'duvida' | 'erro' | 'achado' | 'selecionado' | 'apagado'
 // verde = certo, amarelo = dúvida, vermelho = erro; marrom = ainda não conferido; azul = resultado da busca
-export const CORES: Record<Estado, string> = { normal: '#c9a26b', ok: '#3fae5a', duvida: '#e6c229', erro: '#d64545', achado: '#35b6ff', selecionado: '#ff8a00', apagado: '#4a4f57' }
+export const CORES: Record<Estado, string> = { normal: '#c9a26b', ok: '#3fae5a', duvida: '#e6c229', erro: '#d64545', achado: '#35b6ff', selecionado: '#ffffff', apagado: '#4a4f57' }
 
 function Caixa({ item, lay, estado, onSel, onHover }: { item: Item; lay: LayoutInfo; estado: Estado; onSel: (i: Item) => void; onHover: (i: Item | null) => void }) {
   const { pos, size } = geometriaItem(item, lay)
+  const sel = estado === 'selecionado'
+  // a selecionada mantém a cor da situação; o destaque é um contorno branco grosso e um brilho leve
+  const cor = sel ? CORES[item.status ?? 'normal'] : CORES[estado]
   return (
-    <mesh
-      position={pos}
-      onClick={e => { e.stopPropagation(); onSel(item) }}
-      onPointerOver={e => { e.stopPropagation(); document.body.style.cursor = 'pointer'; onHover(item) }}
-      onPointerOut={() => { document.body.style.cursor = 'auto'; onHover(null) }}
-    >
-      <boxGeometry args={size} />
-      <meshStandardMaterial color={CORES[estado]} emissive={estado === 'selecionado' ? '#ff8a00' : estado === 'achado' ? '#0b4d73' : '#000'} />
-    </mesh>
+    <group position={pos}>
+      <mesh
+        onClick={e => { e.stopPropagation(); onSel(item) }}
+        onPointerOver={e => { e.stopPropagation(); document.body.style.cursor = 'pointer'; onHover(item) }}
+        onPointerOut={() => { document.body.style.cursor = 'auto'; onHover(null) }}
+      >
+        <boxGeometry args={size} />
+        <meshStandardMaterial color={cor} emissive={sel ? cor : estado === 'achado' ? '#0b4d73' : '#000'} emissiveIntensity={sel ? 0.35 : 1} />
+      </mesh>
+      {sel && (() => {
+        // moldura branca na frente da caixa (do lado onde a câmera olha), sempre visível
+        const t = 0.05, z = frenteItem(item, lay) * (size[2] / 2 + 0.012)
+        const barras: [number, number, number, number][] = [
+          [0, size[1] / 2, size[0] + t, t], [0, -size[1] / 2, size[0] + t, t], // em cima e embaixo
+          [-size[0] / 2, 0, t, size[1] + t], [size[0] / 2, 0, t, size[1] + t], // lados
+        ]
+        return barras.map(([x, y, w, h], k) => (
+          <mesh key={k} position={[x, y, z]} raycast={() => null}>
+            <boxGeometry args={[w, h, 0.02]} />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+        ))
+      })()}
+    </group>
   )
 }
 
