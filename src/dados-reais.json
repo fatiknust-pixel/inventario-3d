@@ -10,7 +10,8 @@
   "embalagem": "T5 7942",
   "qtd": "6 pç(s)",
   "fotoEtiqueta": "etiqueta-04-11-03-A.jpg",
-  "tipo": "rack"
+  "tipo": "rack",
+  "status": "ok"
  },
  {
   "posto": 4,
@@ -23,7 +24,8 @@
   "embalagem": "T5 6429",
   "qtd": "20 pç(s)",
   "fotoEtiqueta": "etiqueta-04-01-03-A.jpg",
-  "tipo": "prateleira"
+  "tipo": "prateleira",
+  "status": "ok"
  },
  {
   "posto": 4,
@@ -36,7 +38,8 @@
   "embalagem": "B405920034",
   "qtd": "5 pç(s)",
   "fotoEtiqueta": "etiqueta-04-01-02-B.jpg",
-  "tipo": "prateleira"
+  "tipo": "prateleira",
+  "status": "ok"
  },
  {
   "posto": 4,
@@ -49,7 +52,9 @@
   "embalagem": "T5 7322",
   "qtd": "6 pç(s)",
   "fotoEtiqueta": "etiqueta-04-10-04-A.jpg",
-  "tipo": "rack"
+  "tipo": "rack",
+  "status": "duvida",
+  "obs": "Embalagem (T5 7322) pequena na foto da etiqueta. Falta a foto da peça. Conferir."
  },
  {
   "posto": 4,
@@ -62,7 +67,8 @@
   "embalagem": "T5 6429",
   "qtd": "20 pç(s)",
   "fotoEtiqueta": "etiqueta-04-01-01-B.jpg",
-  "tipo": "prateleira"
+  "tipo": "prateleira",
+  "status": "ok"
  },
  {
   "posto": 4,
@@ -75,7 +81,8 @@
   "embalagem": "T5 1323",
   "qtd": "21 pç(s)",
   "fotoEtiqueta": "etiqueta-04-01-04-C.jpg",
-  "tipo": "prateleira"
+  "tipo": "prateleira",
+  "status": "ok"
  },
  {
   "posto": 4,
@@ -88,7 +95,9 @@
   "embalagem": "T5 3215",
   "qtd": "1200 pç(s)",
   "fotoEtiqueta": "etiqueta-04-01-03-C.jpg",
-  "tipo": "prateleira"
+  "tipo": "prateleira",
+  "status": "duvida",
+  "obs": "O mesmo código A0029943545 também está em 01 01 04 B. Conferir se a peça deve ter dois endereços."
  },
  {
   "posto": 4,
@@ -101,7 +110,8 @@
   "embalagem": "B405920034",
   "qtd": "5 pç(s)",
   "fotoEtiqueta": "etiqueta-04-01-03-B.jpg",
-  "tipo": "prateleira"
+  "tipo": "prateleira",
+  "status": "ok"
  },
  {
   "posto": 4,
@@ -114,7 +124,8 @@
   "embalagem": "B405920034",
   "qtd": "860 pç(s)",
   "fotoEtiqueta": "etiqueta-04-01-02-C.jpg",
-  "tipo": "prateleira"
+  "tipo": "prateleira",
+  "status": "ok"
  },
  {
   "posto": 4,
@@ -127,7 +138,9 @@
   "embalagem": "T5 7667",
   "qtd": "6 pç(s)",
   "fotoEtiqueta": "etiqueta-04-10-03-A.jpg",
-  "tipo": "rack"
+  "tipo": "rack",
+  "status": "duvida",
+  "obs": "Mesma peça nos 3 endereços 04 10 01 A, 02 A e 03 A; conferir a embalagem (T5 7667)."
  },
  {
   "posto": 4,
@@ -140,7 +153,9 @@
   "embalagem": "T5 7667",
   "qtd": "6 pç(s)",
   "fotoEtiqueta": "etiqueta-04-10-01-A.jpg",
-  "tipo": "rack"
+  "tipo": "rack",
+  "status": "duvida",
+  "obs": "Embalagem (T5 7667) ilegível na foto da etiqueta deste endereço; usei a da etiqueta 04 10 03 A. Conferir."
  },
  {
   "posto": 4,
@@ -153,7 +168,9 @@
   "embalagem": "T5 7667",
   "qtd": "6 pç(s)",
   "fotoEtiqueta": "etiqueta-04-10-02-A.jpg",
-  "tipo": "rack"
+  "tipo": "rack",
+  "status": "duvida",
+  "obs": "Embalagem (T5 7667) ilegível na foto da etiqueta deste endereço; usei a da etiqueta 04 10 03 A. Conferir."
  },
  {
   "posto": 4,
@@ -166,7 +183,8 @@
   "embalagem": "B405920035",
   "qtd": "4000 pç(s)",
   "fotoEtiqueta": "etiqueta-04-01-01-C.jpg",
-  "tipo": "prateleira"
+  "tipo": "prateleira",
+  "status": "ok"
  },
  {
   "posto": 4,
@@ -179,7 +197,8 @@
   "embalagem": "T5 7942",
   "qtd": "6 pç(s)",
   "fotoEtiqueta": "etiqueta-04-11-01-A.jpg",
-  "tipo": "rack"
+  "tipo": "rack",
+  "status": "ok"
  },
  {
   "posto": 4,
@@ -192,7 +211,9 @@
   "embalagem": "T5 7322",
   "qtd": "6 pç(s)",
   "fotoEtiqueta": "etiqueta-04-11-04-A.jpg",
-  "tipo": "rack"
+  "tipo": "rack",
+  "status": "duvida",
+  "obs": "Embalagem (T5 7322) pequena na foto da etiqueta. Falta a foto da peça. Conferir."
  },
  {
   "posto": 4,
@@ -205,7 +226,8 @@
   "embalagem": "T5 7942",
   "qtd": "6 pç(s)",
   "fotoEtiqueta": "etiqueta-04-11-02-A.jpg",
-  "tipo": "rack"
+  "tipo": "rack",
+  "status": "ok"
  },
  {
   "posto": 4,
@@ -218,7 +240,8 @@
   "embalagem": "T5 4315",
   "qtd": "21 pç(s)",
   "fotoEtiqueta": "etiqueta-04-01-05-C.jpg",
-  "tipo": "prateleira"
+  "tipo": "prateleira",
+  "status": "ok"
  },
  {
   "posto": 1,
