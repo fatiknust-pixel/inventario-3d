@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Cena, { CORES, geometriaItem, idPrat, montarLayout, nomePrat } from './Cena'
-import { Item, linhaDe, baixarModelo, fotoDaPeca, fotoEtiquetaSrc, dadosExemplo, dadosReais, endereco, fotoSrc, lerExcel, placeholder } from './dados'
+import { Item, linhaDe, baixarModelo, fotoDaPeca, fotoEtiquetaSrc, dadosExemplo, dadosReais, dadosDemo, endereco, fotoSrc, lerExcel, placeholder } from './dados'
 
 export default function App() {
   const [itens, setItens] = useState<Item[]>(() => dadosReais())
@@ -173,6 +173,7 @@ export default function App() {
             <button className="btn" onClick={() => arquivo.current?.click()}>Importar Excel</button>
             <button className="btn modelo" onClick={baixarModelo}>Baixar modelo</button>
             <button className="btn" onClick={() => { setItens(dadosReais()); setSel(null); setFoco(null) }}>Dados reais</button>
+            <button className="btn" onClick={() => { setItens(dadosDemo()); setSel(null); setFoco(null) }}>Demonstração completa</button>
             <button className="btn" onClick={() => { setItens(dadosExemplo()); setSel(null); setFoco(null) }}>Dados de exemplo</button>
           </div>
         </details>
@@ -218,6 +219,7 @@ export default function App() {
             <button className="miniatura" onClick={() => setVerEtiqueta(v => !v)}>{verEtiqueta ? '← Ver a peça' : 'Ver foto da etiqueta'}</button>
           )}
           <div className="end">{endereco(sel)}</div>
+          {sel.simulado && <div className="sub">⚠ Caixa simulada (demonstração)</div>}
           <div className="sub">{sel.semEndereco ? `caixa no chão, sem endereço · perto do corredor ${pad(linhaDe(sel))}` : `posto ${sel.posto} · corredor ${sel.corredor} · posição ${sel.posicao} · altura ${sel.altura}`}{sel.local && sel.local !== sel.corredor && ` · fica fisicamente no corredor ${pad(sel.local)}`}</div>
           <h2>{sel.nome || '(vazio)'}</h2>
           <div className="cod">{sel.codigo}{sel.cor && <span className="cor"> · cor {sel.cor}</span>}</div>

@@ -18,6 +18,7 @@ export type Item = {
   cor?: string // código de cor que vem junto do código da peça (ex.: 7277)
   obs?: string // observação de campo
   status?: 'ok' | 'duvida' | 'erro' // conferência: certo (verde), dúvida (amarelo), erro (vermelho); sem valor = ainda não conferido
+  simulado?: boolean // caixa de demonstração (não existe de verdade)
   semEndereco?: boolean // caixa sem endereço (ex.: no chão)
   local?: number // corredor onde a caixa está de fato, quando o endereço escrito diz outro
   ordem?: number // posição na fila física do corredor, quando a ordem dos endereços não vale
@@ -83,6 +84,26 @@ export function dadosExemplo(): Item[] {
   const i = itens.findIndex(x => x.posto === 4 && x.corredor === 11 && x.posicao === 3 && x.altura === 'A')
   if (i >= 0) itens[i] = real
   else itens.push(real)
+  return itens
+}
+
+// ---------- demonstração: dados reais + caixas simuladas nos corredores vazios (2 a 9) ----------
+export function dadosDemo(): Item[] {
+  const itens: Item[] = [...dadosReais()]
+  const sts: Item['status'][] = ['ok', 'ok', 'ok', 'duvida', 'ok', 'erro', 'ok', undefined]
+  let n = 0
+  for (let corredor = 2; corredor <= 9; corredor++) {
+    for (let posto = 1; posto <= 2; posto++)
+      for (let posicao = 1; posicao <= 5; posicao++) {
+        n++
+        itens.push({ posto, corredor, posicao, altura: 'A', codigo: `A95866${String(20000 + n * 53)}`, nome: NOMES[n % NOMES.length], embalagem: `T5 ${7000 + n}`, qtd: `${2 + (n % 5) * 2} pç(s)`, tipo: 'rack', status: sts[n % sts.length], simulado: true })
+      }
+    for (const altura of ['A', 'B', 'C'])
+      for (let posicao = 1; posicao <= 6; posicao++) {
+        n++
+        itens.push({ posto: 3, corredor, posicao, altura, codigo: `N9101${String(n * 17).padStart(5, '0')}`, nome: NOMES[(n + 3) % NOMES.length], embalagem: `B4059${n}`, qtd: `${50 * (1 + (n % 4))} pç(s)`, tipo: 'prateleira', status: sts[n % sts.length], simulado: true })
+      }
+  }
   return itens
 }
 
