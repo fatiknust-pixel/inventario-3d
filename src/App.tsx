@@ -173,7 +173,7 @@ export default function App() {
             <button className="btn" onClick={() => arquivo.current?.click()}>Importar Excel</button>
             <button className="btn modelo" onClick={baixarModelo}>Baixar modelo</button>
             <button className="btn" onClick={() => { setItens(dadosReais()); setSel(null); setFoco(null) }}>Dados reais</button>
-            <button className="btn" onClick={() => { setItens(dadosDemo()); setSel(null); setFoco(null) }}>Demonstração completa</button>
+            <button className="btn" onClick={() => { setItens(dadosDemo()); irPara(1) }}>Demonstração completa</button>
             <button className="btn" onClick={() => { setItens(dadosExemplo()); setSel(null); setFoco(null) }}>Dados de exemplo</button>
           </div>
         </details>
